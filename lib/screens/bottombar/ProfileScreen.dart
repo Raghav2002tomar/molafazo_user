@@ -1,9 +1,41 @@
 import 'package:flutter/material.dart';
 
+import '../../services/api_service.dart';
+import '../address/address_list_screen.dart';
 import '../profile/SettingScreen.dart';
+import '../profile/controller/profile_service.dart';
+import '../profile/controller/user_storage.dart';
+import '../profile/model/user_model.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  UserModel? _user;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final user = await ProfileService.fetchProfile();
+      setState(() {
+        _user = user;
+        _loading = false;
+      });
+    } catch (_) {
+      _user = await UserStorage.getUser();
+      setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +79,10 @@ class ProfileScreen extends StatelessWidget {
             ),
             child: IconButton(
               onPressed: () {
-Navigator.push(context, MaterialPageRoute(builder: (context)=>EditProfileScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => EditProfileScreen()),
+                );
               },
               icon: Icon(
                 Icons.settings_outlined,
@@ -64,12 +99,14 @@ Navigator.push(context, MaterialPageRoute(builder: (context)=>EditProfileScreen(
           child: Column(
             children: [
               // Profile Card
-              Container(
+              _loading ?
+          Center(child: CircularProgressIndicator()):
+           Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: cs.surface,
                   borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade300),
+                  border: Border.all(color: Colors.grey.shade300),
                   boxShadow: [
                     BoxShadow(
                       color: cs.shadow.withOpacity(0.05),
@@ -86,10 +123,11 @@ Navigator.push(context, MaterialPageRoute(builder: (context)=>EditProfileScreen(
                       height: 60,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(30),
-                        image: const DecorationImage(
-                          image: NetworkImage(
-                            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-                          ),
+                        image:  DecorationImage(
+                          image: _user!.profilePhoto != null
+                              ? NetworkImage("${ApiService.ImagebaseUrl}${ApiService.profile_image_URL}${_user!.profilePhoto!}")
+                              : const NetworkImage('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face') as ImageProvider,
+
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -101,7 +139,7 @@ Navigator.push(context, MaterialPageRoute(builder: (context)=>EditProfileScreen(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Fscreation',
+                            _user!.name,
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
@@ -110,7 +148,7 @@ Navigator.push(context, MaterialPageRoute(builder: (context)=>EditProfileScreen(
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Fscreation441@gmail.com',
+                            _user!.email,
                             style: TextStyle(
                               fontSize: 14,
                               color: cs.onSurfaceVariant,
@@ -122,36 +160,89 @@ Navigator.push(context, MaterialPageRoute(builder: (context)=>EditProfileScreen(
                   ],
                 ),
               ),
-        
+
               const SizedBox(height: 24),
-        
+
               // Menu Items Card
               _buildCard(
                 cs,
                 children: [
-                  _buildMenuItem(context,cs, Icons.person_outline, 'Personal Details', () {}),
+                  _buildMenuItem(
+                    context,
+                    cs,
+                    Icons.person_outline,
+                    'Personal Details',
+                    () {},
+                  ),
                   _buildDivider(cs),
-                  _buildMenuItem(context,cs, Icons.shopping_bag_outlined, 'My Order', () {}),
+                  _buildMenuItem(
+                    context,
+                    cs,
+                    Icons.shopping_bag_outlined,
+                    'My Order',
+                    () {},
+                  ),
                   _buildDivider(cs),
-                  _buildMenuItem(context,cs, Icons.favorite_outline, 'My Favourites', () {}),
+                  _buildMenuItem(
+                    context,
+                    cs,
+                    Icons.favorite_outline,
+                    'My Favourites',
+                    () {},
+                  ),
                   _buildDivider(cs),
-                  _buildMenuItem(context,cs, Icons.local_shipping_outlined, 'Shipping Address', () {}),
+                  _buildMenuItem(
+                    context,
+                    cs,
+                    Icons.local_shipping_outlined,
+                    'Shipping Address',
+                    () {
+                      print("jkl");
+                      Navigator.push(context, MaterialPageRoute(builder: (context)=>AddressListScreen()));
+                    },
+                  ),
                   _buildDivider(cs),
-                  _buildMenuItem(context,cs, Icons.credit_card_outlined, 'My Card', () {}),
+                  _buildMenuItem(
+                    context,
+                    cs,
+                    Icons.credit_card_outlined,
+                    'My Card',
+                    () {},
+                  ),
                   _buildDivider(cs),
-                  _buildMenuItem(context,cs, Icons.settings_outlined, 'Settings', () {}, isLast: true),
+                  _buildMenuItem(
+                    context,
+                    cs,
+                    Icons.settings_outlined,
+                    'Settings',
+                    () {},
+                    isLast: true,
+                  ),
                 ],
               ),
-        
+
               const SizedBox(height: 24),
-        
+
               // Bottom Menu Items Card
               _buildCard(
                 cs,
                 children: [
-                  _buildMenuItem(context, cs, Icons.help_outline, 'FAQs', () {}),
+                  _buildMenuItem(
+                    context,
+                    cs,
+                    Icons.help_outline,
+                    'FAQs',
+                    () {},
+                  ),
                   _buildDivider(cs),
-                  _buildMenuItem(context,cs, Icons.privacy_tip_outlined, 'Privacy Policy', () {}, isLast: true),
+                  _buildMenuItem(
+                    context,
+                    cs,
+                    Icons.privacy_tip_outlined,
+                    'Privacy Policy',
+                    () {},
+                    isLast: true,
+                  ),
                 ],
               ),
             ],
@@ -169,7 +260,6 @@ Navigator.push(context, MaterialPageRoute(builder: (context)=>EditProfileScreen(
         border: Border.all(color: Colors.grey.shade300),
         boxShadow: [
           BoxShadow(
-
             color: cs.shadow.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 10),
@@ -181,13 +271,13 @@ Navigator.push(context, MaterialPageRoute(builder: (context)=>EditProfileScreen(
   }
 
   Widget _buildMenuItem(
-      context,
-      ColorScheme cs,
-      IconData icon,
-      String title,
-      VoidCallback onTap, {
-        bool isLast = false,
-      }) {
+    context,
+    ColorScheme cs,
+    IconData icon,
+    String title,
+    VoidCallback onTap, {
+    bool isLast = false,
+  }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       onTap: onTap,
@@ -229,12 +319,18 @@ Navigator.push(context, MaterialPageRoute(builder: (context)=>EditProfileScreen(
     );
   }
 }
+
 class _CircleAction extends StatelessWidget {
   final IconData icon;
   final Color bg;
   final Color fg;
   final VoidCallback onTap;
-  const _CircleAction({required this.icon, required this.bg, required this.fg, required this.onTap});
+  const _CircleAction({
+    required this.icon,
+    required this.bg,
+    required this.fg,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {

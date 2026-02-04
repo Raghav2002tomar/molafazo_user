@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl_phone_field/intl_phone_field.dart';
+import '../../services/api_service.dart';
+import '../../services/auth_service.dart';
 import '../bottombar/MainScreen.dart';
 import 'SignUpScreen.dart';
 
@@ -16,7 +20,9 @@ class _AuthScreenState extends State<AuthScreen> {
   final _phoneController = TextEditingController();
   final _otpController = TextEditingController();
   bool _isLoading = false;
-
+  String _rawPhoneNumber = ''; // without country code
+  int? _userIdFromOtp;
+  String? _apiToken;
   // OTP state
   bool _showOtp = false;
   int _secondsLeft = 60;
@@ -43,8 +49,7 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Future<void> _requestOtp() async {
-    final phone = _phoneController.text.trim();
-    if (phone.isEmpty || phone.length < 8) {
+    if (_rawPhoneNumber.isEmpty || _rawPhoneNumber.length < 8) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Enter a valid phone number')),
       );
@@ -52,36 +57,87 @@ class _AuthScreenState extends State<AuthScreen> {
     }
 
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1)); // simulate API
-    if (!mounted) return;
 
-    setState(() {
-      _isLoading = false;
-      _showOtp = true;
-    });
-    _startTimer();
-    _showOtpSheet();
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiService.baseUrl}/customer/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "phone_number": _rawPhoneNumber,
+          "device_type": "android",
+          "device_id": "abc123",
+          "fcm_token": "123456",
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (data['status'] == true) {
+        _userIdFromOtp = data['data']['user_id'];
+
+        setState(() {
+          _isLoading = false;
+          _showOtp = true;
+        });
+
+        _startTimer();
+        _showOtpSheet();
+      } else {
+        throw data['message'];
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
   }
 
-  void _verifyOtpAndLogin() async {
+
+
+  Future<void> _verifyOtpAndLogin() async {
     final code = _otpController.text.trim();
     if (code.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter the 6-digit code')),
+        const SnackBar(content: Text('Enter 6-digit OTP')),
       );
       return;
     }
 
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1)); // simulate verify
-    if (!mounted) return;
-    setState(() => _isLoading = false);
 
-    if (!mounted) return;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const SimpleBottomNavScreen()),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiService.baseUrl}/customer/verify-otp'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "phone_number": _rawPhoneNumber,
+          "otp": code,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (data['status'] == true) {
+        _apiToken = data['data']['api_token'];
+
+        await AuthStorage.saveLogin(_apiToken!);
+
+        // TODO: Save token securely (SharedPreferences / SecureStorage)
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const SimpleBottomNavScreen()),
+        );
+      } else {
+        throw data['message'];
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
   }
 
   void _showOtpSheet() {
@@ -304,46 +360,24 @@ class _AuthScreenState extends State<AuthScreen> {
                     // Phone Input
 
                     // Phone Input with country code (default Russia)
-                    IntlPhoneField(
-                      controller: _phoneController,
-                      initialCountryCode: 'RU', // Russia default
-                      disableLengthCheck: true, // keep UI leniency; validate on backend
-                      decoration: InputDecoration(
-                        labelText: 'Phone number',
-                        hintText: '987 654 32 10',
-                        helperText: 'Country code selectable, defaults to Russia',
-                        helperStyle: TextStyle(color: cs.onSurfaceVariant),
-                        filled: true,
-                        fillColor: cs.surfaceContainerLow,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: cs.outlineVariant),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: cs.outline.withOpacity(0.2)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: cs.primary, width: 1.4),
-                        ),
+                  IntlPhoneField(
+                    controller: _phoneController,
+                    initialCountryCode: 'TJ', // Tajikistan (+992)
+                    disableLengthCheck: true,
+                    decoration: InputDecoration(
+                      labelText: 'Phone number',
+                      hintText: '900 12 34 56',
+                      filled: true,
+                      fillColor: cs.surfaceContainerLow,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      flagsButtonPadding: const EdgeInsets.symmetric(horizontal: 8),
-                      dropdownIconPosition: IconPosition.trailing,
-                      dropdownTextStyle: TextStyle(color: cs.onSurface),
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: cs.onSurface),
-                      onChanged: (phone) {
-                        // phone.completeNumber is like +7xxxxxxxxxx
-                        // Keep controller synced to national digits for display; send completeNumber to backend.
-                        // Example: store it in a field if needed:
-                        // _fullPhone = phone.completeNumber;
-                      },
-                      onCountryChanged: (country) {
-                        // country.code (RU), country.dialCode (7), country.name
-                        // Optional: set state if you want to display elsewhere.
-                      },
                     ),
+                    onChanged: (phone) {
+                      // 🔥 ONLY NATIONAL NUMBER (NO +992)
+                      _rawPhoneNumber = phone.number;
+                    },
+                  ),
 
 
 
@@ -406,19 +440,6 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
 
               const SizedBox(height: 40),
-
-              // Sign Up Link
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text("Don't have an account? ", style: TextStyle(color: cs.onBackground.withOpacity(0.7), fontSize: 16)),
-                  TextButton(
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SignUpScreen())),
-                    style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                    child: Text("Sign Up", style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.w700)),
-                  ),
-                ],
-              ),
             ],
           ),
         ),

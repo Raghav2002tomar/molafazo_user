@@ -9,7 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'providers/product_provider.dart';
 import 'providers/cart_provider.dart';
-import 'screens/product_list_screen.dart';
+import 'screens/product/product_list_screen.dart';
 import 'services/storage_service.dart';
 
 void main() async {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/product.dart';
-import '../screens/product_details_screen.dart';
+import '../screens/product/product_details_screen.dart';
 
 class ProductCard extends StatelessWidget {
   final Product product;
@@ -28,12 +28,12 @@ class ProductCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ProductDetailsScreen(product: product),
-            ),
-          );
+          // Navigator.push(
+          //   context,
+          //   MaterialPageRoute(
+          //     builder: (context) => ProductDetailsScreen(product: product),
+          //   ),
+          // );
         },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

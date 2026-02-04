@@ -1,8 +1,9 @@
 // lib/theme/app_theme.dart remains the same, you already provide light/dark schemes.
 
-import 'package:ecom/screens/product_list_screen.dart';
+import 'package:ecom/screens/product/product_list_screen.dart';
 import 'package:flutter/material.dart';
 
+import '../cart/cart_screen.dart';
 import '../chat/ChatListScreen.dart';
 import 'HomeScreen.dart';
 import 'ProfileScreen.dart';
@@ -19,7 +20,7 @@ class _SimpleBottomNavScreenState extends State<SimpleBottomNavScreen> {
 
   final List<Widget> _screens =  [
     HomeScreen(),
-    ProductListScreen(),
+    CartScreen(),
     ChatListScreen(),
     ProfileScreen(),
   ];

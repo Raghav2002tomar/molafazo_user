@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
+import '../../services/auth_service.dart';
 import '../auth/LoginScreen.dart';
+import '../bottombar/MainScreen.dart';
 
 class AnimatedParticle {
   double x;
@@ -85,7 +87,27 @@ class _OnBoardingScreenState extends State<OnBoardingScreen>
     _particleController.addListener(() {
       _updateParticles();
     });
+
+    _checkLogin();
   }
+
+  Future<void> _checkLogin() async {
+    await Future.delayed(const Duration(seconds: 2)); // splash delay
+
+    final isLoggedIn = await AuthStorage.isLoggedIn();
+
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => isLoggedIn
+            ? const SimpleBottomNavScreen()
+            : const AuthScreen(),
+      ),
+    );
+  }
+
 
   void _initializeParticles() {
     particles.clear();
@@ -304,8 +326,8 @@ class _OnBoardingScreenState extends State<OnBoardingScreen>
                     },
                   ),
 
-                  const Spacer(),
-
+                  // const Spacer(),
+SizedBox(height: 100,),
                   // Brand Name with pulse animation
                   Center(
                     child: AnimatedBuilder(
@@ -363,111 +385,111 @@ class _OnBoardingScreenState extends State<OnBoardingScreen>
                     child: Column(
                       children: [
                         // Login Button
-                        AnimatedBuilder(
-                          animation: _gradientAnimation,
-                          builder: (context, child) {
-                            return Container(
-                              width: double.infinity,
-                              height: 55,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.white,
-                                    Color.lerp(Colors.white, Colors.purple.shade50, _gradientAnimation.value * 0.3)!,
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(30),
-                                boxShadow: [
-                                  BoxShadow(
-                                    offset: const Offset(0, 4),
-                                    blurRadius: 15 + (10 * _gradientAnimation.value),
-                                    color: Colors.purple.withOpacity(0.1 + (0.1 * _gradientAnimation.value)),
-                                  ),
-                                  BoxShadow(
-                                    offset: const Offset(0, 8),
-                                    blurRadius: 25,
-                                    color: Colors.black.withOpacity(0.1),
-                                  ),
-                                ],
-                              ),
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  // Handle login
-                                  Navigator.push(context, MaterialPageRoute(builder: (context)=>AuthScreen()));
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.transparent,
-                                  foregroundColor: Colors.black,
-                                  elevation: 0,
-                                  shadowColor: Colors.transparent,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(30),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Login',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // Sign Up Button
-                        AnimatedBuilder(
-                          animation: _gradientAnimation,
-                          builder: (context, child) {
-                            return Container(
-                              width: double.infinity,
-                              height: 55,
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: Color.lerp(
-                                    Colors.white.withOpacity(0.3),
-                                    Colors.purple.withOpacity(0.5),
-                                    _gradientAnimation.value,
-                                  )!,
-                                  width: 1.5,
-                                ),
-                                borderRadius: BorderRadius.circular(30),
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.transparent,
-                                    Colors.purple.withOpacity(0.05 * _gradientAnimation.value),
-                                  ],
-                                ),
-                              ),
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  // Handle sign up
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.transparent,
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  shadowColor: Colors.transparent,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(30),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Sign Up',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                        // AnimatedBuilder(
+                        //   animation: _gradientAnimation,
+                        //   builder: (context, child) {
+                        //     return Container(
+                        //       width: double.infinity,
+                        //       height: 55,
+                        //       decoration: BoxDecoration(
+                        //         gradient: LinearGradient(
+                        //           colors: [
+                        //             Colors.white,
+                        //             Color.lerp(Colors.white, Colors.purple.shade50, _gradientAnimation.value * 0.3)!,
+                        //           ],
+                        //         ),
+                        //         borderRadius: BorderRadius.circular(30),
+                        //         boxShadow: [
+                        //           BoxShadow(
+                        //             offset: const Offset(0, 4),
+                        //             blurRadius: 15 + (10 * _gradientAnimation.value),
+                        //             color: Colors.purple.withOpacity(0.1 + (0.1 * _gradientAnimation.value)),
+                        //           ),
+                        //           BoxShadow(
+                        //             offset: const Offset(0, 8),
+                        //             blurRadius: 25,
+                        //             color: Colors.black.withOpacity(0.1),
+                        //           ),
+                        //         ],
+                        //       ),
+                        //       child: ElevatedButton(
+                        //         onPressed: () {
+                        //           // Handle login
+                        //           Navigator.push(context, MaterialPageRoute(builder: (context)=>AuthScreen()));
+                        //         },
+                        //         style: ElevatedButton.styleFrom(
+                        //           backgroundColor: Colors.transparent,
+                        //           foregroundColor: Colors.black,
+                        //           elevation: 0,
+                        //           shadowColor: Colors.transparent,
+                        //           shape: RoundedRectangleBorder(
+                        //             borderRadius: BorderRadius.circular(30),
+                        //           ),
+                        //         ),
+                        //         child: const Text(
+                        //           'Login',
+                        //           style: TextStyle(
+                        //             fontSize: 18,
+                        //             fontWeight: FontWeight.w600,
+                        //             letterSpacing: 0.5,
+                        //           ),
+                        //         ),
+                        //       ),
+                        //     );
+                        //   },
+                        // ),
+                        //
+                        // const SizedBox(height: 20),
+                        //
+                        // // Sign Up Button
+                        // AnimatedBuilder(
+                        //   animation: _gradientAnimation,
+                        //   builder: (context, child) {
+                        //     return Container(
+                        //       width: double.infinity,
+                        //       height: 55,
+                        //       decoration: BoxDecoration(
+                        //         border: Border.all(
+                        //           color: Color.lerp(
+                        //             Colors.white.withOpacity(0.3),
+                        //             Colors.purple.withOpacity(0.5),
+                        //             _gradientAnimation.value,
+                        //           )!,
+                        //           width: 1.5,
+                        //         ),
+                        //         borderRadius: BorderRadius.circular(30),
+                        //         gradient: LinearGradient(
+                        //           colors: [
+                        //             Colors.transparent,
+                        //             Colors.purple.withOpacity(0.05 * _gradientAnimation.value),
+                        //           ],
+                        //         ),
+                        //       ),
+                        //       child: ElevatedButton(
+                        //         onPressed: () {
+                        //           // Handle sign up
+                        //         },
+                        //         style: ElevatedButton.styleFrom(
+                        //           backgroundColor: Colors.transparent,
+                        //           foregroundColor: Colors.white,
+                        //           elevation: 0,
+                        //           shadowColor: Colors.transparent,
+                        //           shape: RoundedRectangleBorder(
+                        //             borderRadius: BorderRadius.circular(30),
+                        //           ),
+                        //         ),
+                        //         child: const Text(
+                        //           'Sign Up',
+                        //           style: TextStyle(
+                        //             fontSize: 18,
+                        //             fontWeight: FontWeight.w600,
+                        //             letterSpacing: 0.5,
+                        //           ),
+                        //         ),
+                        //       ),
+                        //     );
+                        //   },
+                        // ),
                       ],
                     ),
                   ),

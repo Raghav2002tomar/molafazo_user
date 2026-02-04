@@ -1,7 +1,16 @@
+import 'dart:io';
+
+import 'package:ecom/screens/onboarding/OnBoardingScreen.dart';
+import 'package:ecom/services/api_service.dart';
+import 'package:ecom/services/auth_service.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/translate_provider.dart';
+import 'controller/profile_service.dart';
+import 'controller/user_storage.dart';
+import 'model/user_model.dart';
 
 
 class EditProfileScreen extends StatefulWidget {
@@ -14,6 +23,51 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   bool isMale = true;
   bool notification = true;
+  final nameCtrl = TextEditingController();
+  final emailCtrl = TextEditingController();
+  final ageCtrl = TextEditingController();
+
+  File? profileImage;
+  UserModel? user;
+  bool loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    user = await UserStorage.getUser();
+    if (user != null) {
+      nameCtrl.text = user!.name;
+      emailCtrl.text = user!.email;
+    }
+    setState(() => loading = false);
+  }
+
+  Future<void> _pickImage() async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() => profileImage = File(picked.path));
+    }
+  }
+  Future<void> _updateProfile() async {
+    try {
+      await ProfileService.updateProfile(
+        name: nameCtrl.text,
+        email: emailCtrl.text,
+        image: profileImage,
+      );
+
+      Navigator.pop(context, true); // refresh previous screen
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -73,11 +127,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   Positioned(
                     bottom: 0,
                     right: 0,
-                    child: CircleAvatar(
-                      radius: 16,
-                      backgroundColor: cs.primary,
-                      child: Icon(Icons.edit, size: 16, color: cs.onPrimary),
+                   child:   GestureDetector(
+                      onTap: _pickImage,
+                      child: Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 50,
+                            backgroundImage: profileImage != null
+                                ? FileImage(profileImage!)
+                                : (user?.profilePhoto != null
+                                ? NetworkImage("${ApiService.ImagebaseUrl}${ApiService.profile_image_URL}${user!.profilePhoto!}")
+                                : const AssetImage('assets/avatar.png')) as ImageProvider,
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: CircleAvatar(
+                              radius: 16,
+                              backgroundColor: cs.primary,
+                              child: Icon(Icons.edit, size: 16, color: cs.onPrimary),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+
+
                   ),
                 ],
               ),
@@ -92,31 +167,31 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 24),
 
               // Name
-              _buildTextField("Name", "Fscreation", cs),
+              _buildEditableField("Name", nameCtrl, cs),
               const SizedBox(height: 16),
 
               // Gender
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text("Gender",
-                    style: TextStyle(color: cs.onSurface.withOpacity(0.6))),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  _genderButton("Male", true),
-                  const SizedBox(width: 12),
-                  _genderButton("Female", false),
-                ],
-              ),
-              const SizedBox(height: 16),
+              // Align(
+              //   alignment: Alignment.centerLeft,
+              //   child: Text("Gender",
+              //       style: TextStyle(color: cs.onSurface.withOpacity(0.6))),
+              // ),
+              // const SizedBox(height: 8),
+              // Row(
+              //   children: [
+              //     _genderButton("Male", true),
+              //     const SizedBox(width: 12),
+              //     _genderButton("Female", false),
+              //   ],
+              // ),
+              // const SizedBox(height: 16),
 
-              // Age
-              _buildTextField("Age", "22 Year", cs),
-              const SizedBox(height: 16),
+              // // Age
+              // _buildTextField("Age", "22 Year", cs),
+              // const SizedBox(height: 16),
 
               // Email
-              _buildTextField("Email", "Fscreation441@gmail.com", cs),
+              _buildEditableField("Email", emailCtrl, cs),
               const SizedBox(height: 24),
 
               // Settings
@@ -178,6 +253,30 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
 
               const SizedBox(height: 24),
+              const SizedBox(height: 24),
+
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: _updateProfile,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isDark ? Colors.white : Colors.black,
+                    foregroundColor: isDark ? Colors.black : Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    "Save Changes",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
 
               // Logout Button
               SizedBox(
@@ -191,7 +290,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                   ),
                   onPressed: () {
+                    AuthStorage.logout();
                     // TODO: Logout action
+
+                    Navigator
+                        .of(context)
+                        .pushReplacement(new MaterialPageRoute(builder: (BuildContext context) {
+                      return new OnBoardingScreen();
+                    }));
                   },
                   icon:  Icon(Icons.logout, color:isDark?Colors.black:  Colors.white),
                   label:  Text(
@@ -295,6 +401,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       ),
     );
   }
+}
+Widget _buildEditableField(
+    String label,
+    TextEditingController controller,
+    ColorScheme cs,
+    ) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label, style: TextStyle(color: cs.onSurface.withOpacity(0.6))),
+      TextField(
+        controller: controller,
+        decoration: const InputDecoration(border: UnderlineInputBorder()),
+      ),
+    ],
+  );
 }
 
 class _CircleAction extends StatelessWidget {

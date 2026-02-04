@@ -12,18 +12,18 @@ class ProductProvider extends ChangeNotifier {
   String? get error => _error;
 
   Future<void> fetchProducts() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      _products = await ApiService.fetchProducts();
-    } catch (e) {
-      _error = e.toString();
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+    // _isLoading = true;
+    // _error = null;
+    // notifyListeners();
+    //
+    // try {
+    //   _products = await ApiService.fetchProducts();
+    // } catch (e) {
+    //   _error = e.toString();
+    // } finally {
+    //   _isLoading = false;
+    //   notifyListeners();
+    // }
   }
 
   Product? getProductById(int id) {

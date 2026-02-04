@@ -1,64 +1,169 @@
-import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:internet_connection_checker/internet_connection_checker.dart';
-
-import '../models/product.dart';
 
 class ApiService {
-  static const String baseUrl = 'https://fakestoreapi.com';
-  static final http.Client _client = http.Client();
+  static const String baseUrl = "https://grantoma.lt/api";
+  static const String ImagebaseUrl = "https://grantoma.lt/";
+  static const String gov_id_document_URL = "/assets/gov_id_document/";
+  static const String profile_image_URL = "/assets/profile_image/";
+  static const String store_logo_URL = "/assets/store_logo/";
+  static const String product_images_URL = "/assets/product_images/";
+  static const String store_documents_URL = "assets/store_documents/";
+  static const String category_images_URL = "assets/category_images/";
+  static const String banner_images_URL = "assets/banner_images/";
 
-  static Future<List<Product>> fetchProducts() async {
-    // ✅ First check internet availability
-    final hasConnection = await _hasInternet();
-    if (!hasConnection) {
-      throw Exception('No Internet Connection');
-    }
-
-    const maxAttempts = 3;
-    Duration delay = const Duration(milliseconds: 500);
-
-    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        final uri = Uri.parse('$baseUrl/products');
-        final resp = await _client
-            .get(uri, headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'ShopEase/1.0 (+flutter)'
-        })
-            .timeout(const Duration(seconds: 15));
-
-        if (resp.statusCode == 200) {
-          final List<dynamic> list = json.decode(resp.body);
-          return list.map((j) => Product.fromJson(j)).toList();
-        }
-        throw Exception('HTTP ${resp.statusCode} ${resp.reasonPhrase}');
-      } on TimeoutException {
-        if (attempt == maxAttempts) {
-          throw Exception('Request timed out (attempt $attempt/$maxAttempts)');
-        }
-        await Future.delayed(delay);
-        delay *= 2;
-      } catch (e) {
-        if (attempt == maxAttempts) rethrow;
-        await Future.delayed(delay);
-        delay *= 2;
-      }
-    }
-    throw Exception('Unreachable');
+  /// 🔹 Common headers
+  static Map<String, String> _headers({String? token}) {
+    return {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+      if (token != null) "Authorization": "Bearer $token",
+    };
   }
 
-  static Future<bool> _hasInternet() async {
-    final connectivityResult = await Connectivity().checkConnectivity();
-    if (connectivityResult == ConnectivityResult.none) return false;
+  /// =========================
+  /// 🔵 GET API
+  /// =========================
+  static Future<dynamic> get({
+    required String endpoint,
+    String? token,
+  }) async {
+    try {
+      final response = await http
+          .get(
+        Uri.parse(baseUrl + endpoint),
+        headers: _headers(token: token),
+      )
+          .timeout(const Duration(seconds: 15));
 
-    // Use the singleton instance
-    return await InternetConnectionChecker.instance.hasConnection;
+      return _handleResponse(response);
+    } catch (e) {
+      return _handleError(e);
+    }
   }
 
-  static void dispose() {
-    _client.close();
+  /// =========================
+  /// 🟢 POST JSON API
+  /// =========================
+  static Future<dynamic> post({
+    required String endpoint,
+    Map<String, dynamic>? body,
+    String? token,
+  }) async {
+    try {
+      final response = await http
+          .post(
+        Uri.parse(baseUrl + endpoint),
+        headers: _headers(token: token),
+        body: jsonEncode(body ?? {}),
+      )
+          .timeout(const Duration(seconds: 15));
+
+      return _handleResponse(response);
+    } catch (e) {
+      return _handleError(e);
+    }
+  }
+
+  static Future<dynamic> postFormData({
+    required String endpoint,
+    required Map<String, String> fields,
+    String? token,
+  }) async {
+    try {
+      final request =
+      http.MultipartRequest("POST", Uri.parse(baseUrl + endpoint));
+
+      request.headers.addAll({
+        "Accept": "application/json",
+        if (token != null) "Authorization": "Bearer $token",
+      });
+
+      request.fields.addAll(fields);
+
+      final streamed = await request.send()
+          .timeout(const Duration(seconds: 15));
+
+      final responseBody = await streamed.stream.bytesToString();
+
+      return _handleResponse(
+        http.Response(responseBody, streamed.statusCode),
+      );
+    } catch (e) {
+      return _handleError(e);
+    }
+  }
+
+
+  /// =========================
+  /// 🟣 MULTIPART (IMAGE / FILE)
+  /// =========================
+  static Future<dynamic> multipart({
+    required String endpoint,
+    required Map<String, String> fields,
+    required Map<String, File> files,
+    String? token,
+  }) async {
+    try {
+      final request =
+      http.MultipartRequest("POST", Uri.parse(baseUrl + endpoint));
+
+      request.headers.addAll({
+        "Accept": "application/json",
+        if (token != null) "Authorization": "Bearer $token",
+      });
+
+      request.fields.addAll(fields);
+
+      files.forEach((key, file) async {
+        request.files.add(
+          await http.MultipartFile.fromPath(key, file.path),
+        );
+      });
+
+      final response = await request.send();
+      final resBody = await response.stream.bytesToString();
+
+      return _handleResponse(
+        http.Response(resBody, response.statusCode),
+      );
+    } catch (e) {
+      return _handleError(e);
+    }
+  }
+
+  /// =========================
+  /// 🔴 RESPONSE HANDLER
+  /// =========================
+  static dynamic _handleResponse(http.Response response) {
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return {
+        "success": data["status"] == true,
+        "data": data["data"],
+        "message": data["message"],
+      };
+    } else {
+      return {
+        "success": false,
+        "message": data["message"] ?? "Something went wrong",
+        "status": response.statusCode,
+      };
+    }
+  }
+
+
+  /// =========================
+  /// ❌ ERROR HANDLER
+  /// =========================
+  static dynamic _handleError(dynamic error) {
+    return {
+      "success": false,
+      "message": error.toString().contains("Timeout")
+          ? "Request timeout"
+          : "No Internet / Server Error",
+    };
   }
 }
