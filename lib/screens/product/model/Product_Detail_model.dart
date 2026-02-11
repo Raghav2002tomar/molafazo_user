@@ -121,19 +121,12 @@ class ProductDetail {
 }
 
 class AttributesJson {
-  final List<String> size;
-  final List<String> color;
+  final Map<String, dynamic> data;
 
-  AttributesJson({
-    required this.size,
-    required this.color,
-  });
+  AttributesJson({required this.data});
 
   factory AttributesJson.fromJson(Map<String, dynamic> json) {
-    return AttributesJson(
-      size: (json['size'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
-      color: (json['color'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
-    );
+    return AttributesJson(data: json);
   }
 }
 
@@ -318,3 +311,4 @@ class RelatedProduct {
     );
   }
 }
+

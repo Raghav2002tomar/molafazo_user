@@ -11,7 +11,8 @@ import 'providers/product_provider.dart';
 import 'providers/cart_provider.dart';
 import 'screens/product/product_list_screen.dart';
 import 'services/storage_service.dart';
-
+final GlobalKey<ScaffoldMessengerState> rootMessengerKey =
+GlobalKey<ScaffoldMessengerState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
@@ -52,6 +53,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'ShopEase Professional',
       debugShowCheckedModeBanner: false,
+      scaffoldMessengerKey: rootMessengerKey,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: mode,

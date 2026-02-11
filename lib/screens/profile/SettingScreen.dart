@@ -30,6 +30,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   File? profileImage;
   UserModel? user;
   bool loading = true;
+  String? emailError;
+  bool saving = false;
 
   @override
   void initState() {
@@ -53,6 +55,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
   Future<void> _updateProfile() async {
+    if (saving) return;
+
+    setState(() {
+      saving = true;
+      emailError = null;
+    });
+
     try {
       await ProfileService.updateProfile(
         name: nameCtrl.text,
@@ -60,13 +69,40 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         image: profileImage,
       );
 
-      Navigator.pop(context, true); // refresh previous screen
+      // ✅ Success toast
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Profile updated successfully"),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+
+      Navigator.pop(context, true);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      final msg = e.toString().replaceFirst('Exception: ', '');
+
+      setState(() {
+        emailError = msg;
+      });
+
+      // ❌ Error toast
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(msg),
+            backgroundColor: Colors.red.shade600,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => saving = false);
+      }
     }
   }
+
 
 
   @override
@@ -133,12 +169,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         children: [
                           CircleAvatar(
                             radius: 50,
+                            backgroundColor: Colors.grey.shade200,
                             backgroundImage: profileImage != null
                                 ? FileImage(profileImage!)
-                                : (user?.profilePhoto != null
-                                ? NetworkImage("${ApiService.ImagebaseUrl}${ApiService.profile_image_URL}${user!.profilePhoto!}")
-                                : const AssetImage('assets/avatar.png')) as ImageProvider,
+                                : (user?.profilePhoto != null && user!.profilePhoto!.isNotEmpty
+                                ? NetworkImage(
+                              "${ApiService.ImagebaseUrl}${ApiService.profile_image_URL}${user!.profilePhoto!}",
+                            )
+                                : null),
+                            child: (profileImage == null &&
+                                (user?.profilePhoto == null || user!.profilePhoto!.isEmpty))
+                                ? const Icon(
+                              Icons.person,
+                              size: 40,
+                              color: Colors.grey,
+                            )
+                                : null,
                           ),
+
                           Positioned(
                             bottom: 0,
                             right: 0,
@@ -191,7 +239,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               // const SizedBox(height: 16),
 
               // Email
-              _buildEditableField("Email", emailCtrl, cs),
+              _buildEditableField("Email", emailCtrl, cs, error: emailError),
               const SizedBox(height: 24),
 
               // Settings
@@ -259,7 +307,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: _updateProfile,
+                  onPressed: saving ? null : _updateProfile,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isDark ? Colors.white : Colors.black,
                     foregroundColor: isDark ? Colors.black : Colors.white,
@@ -268,12 +316,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
+                  child: saving
+                      ? SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: isDark ? Colors.black : Colors.white,
+                    ),
+                  )
+                      : const Text(
                     "Save Changes",
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
+
 
               const SizedBox(height: 24),
 
@@ -306,6 +364,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                 ),
               ),
+              SizedBox(height: 100,),
             ],
           ),
         ),
@@ -405,19 +464,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 Widget _buildEditableField(
     String label,
     TextEditingController controller,
-    ColorScheme cs,
-    ) {
+    ColorScheme cs, {
+      String? error,
+    }) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(label, style: TextStyle(color: cs.onSurface.withOpacity(0.6))),
       TextField(
         controller: controller,
-        decoration: const InputDecoration(border: UnderlineInputBorder()),
+        decoration: InputDecoration(
+          border: const UnderlineInputBorder(),
+          errorText: error,
+        ),
       ),
     ],
   );
 }
+
 
 class _CircleAction extends StatelessWidget {
   final IconData icon;

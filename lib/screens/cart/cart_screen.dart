@@ -38,7 +38,7 @@ class _CartScreenState extends State<CartScreen> {
       // User not logged in, redirect to login
       if (mounted) {
         // Navigator.pushReplacementNamed(context, '/login');
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=> AuthScreen()));
+        Navigator.push(context, MaterialPageRoute(builder: (context)=> AuthScreen()));
       }
       return;
     }
@@ -119,15 +119,16 @@ class _CartScreenState extends State<CartScreen> {
       appBar: AppBar(
         backgroundColor: cs.surface,
         elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.all(6.0),
-          child: _CircleAction(
-            icon: Icons.keyboard_double_arrow_left_outlined,
-            bg: isDark ? Colors.white : Colors.black,
-            fg: isDark ? Colors.black : Colors.white,
-            onTap: () => Navigator.pop(context),
-          ),
-        ),
+        automaticallyImplyLeading: false,
+        // leading: Padding(
+        //   padding: const EdgeInsets.all(6.0),
+        //   child: _CircleAction(
+        //     icon: Icons.keyboard_double_arrow_left_outlined,
+        //     bg: isDark ? Colors.white : Colors.black,
+        //     fg: isDark ? Colors.black : Colors.white,
+        //     onTap: () => Navigator.pop(context),
+        //   ),
+        // ),
         title: Text(
           'My Cart',
           style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold),

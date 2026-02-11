@@ -48,7 +48,17 @@ class ProfileService {
         UserModel.fromJson(res['data']),
       );
     } else {
-      throw res['message'] ?? 'Profile update failed';
+      // ✅ Validation errors (email already taken, etc.)
+      if (res['errors'] != null && res['errors'] is Map) {
+        final errors = res['errors'] as Map<String, dynamic>;
+        final firstKey = errors.keys.first;
+        final firstError = errors[firstKey][0];
+
+        throw Exception(firstError); // ✅ FIXED
+      }
+
+      throw Exception(res['message'] ?? 'Profile update failed');
     }
   }
+
 }

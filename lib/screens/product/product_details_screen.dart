@@ -1,3 +1,4 @@
+import 'package:ecom/screens/auth/LoginScreen.dart';
 import 'package:ecom/screens/cart/cart_screen.dart';
 import 'package:ecom/screens/product/store_detail_screen.dart';
 import 'package:flutter/material.dart';
@@ -23,6 +24,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   String? selectedColor;
   int selectedImageIndex = 0;
   bool _isAddingToCart = false;
+  AttributesJson? attributesJson;
 
   // Cache the product data to avoid reloading
   ProductDetailResponse? _cachedProductData;
@@ -49,13 +51,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         _isLoading = false;
 
         // Initialize selected size and color from API data
-        final productData = data.data;
-        if (selectedSize == null && productData.attributesJson?.size.isNotEmpty == true) {
-          selectedSize = productData.attributesJson!.size.first;
-        }
-        if (selectedColor == null && productData.attributesJson?.color.isNotEmpty == true) {
-          selectedColor = productData.attributesJson!.color.first;
-        }
+        // final productData = data.data;
+        // if (selectedSize == null && productData.attributesJson?.size.isNotEmpty == true) {
+        //   selectedSize = productData.attributesJson!.size.first;
+        // }
+        // if (selectedColor == null && productData.attributesJson?.color.isNotEmpty == true) {
+        //   selectedColor = productData.attributesJson!.color.first;
+        // }
       });
     } catch (e) {
       setState(() {
@@ -168,6 +170,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
+
   void _showLoginDialog() {
     final cs = Theme.of(context).colorScheme;
 
@@ -200,7 +203,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             onPressed: () {
               Navigator.pop(context);
               // Navigate to login screen
-              Navigator.pushNamed(context, '/login');
+              // Navigator.pushNamed(context, '/login');
+              Navigator.push(context, MaterialPageRoute(builder: (context)=>AuthScreen()));
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: cs.primary,
@@ -498,45 +502,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                   // Size and Color selection
                   if (product.attributesJson != null)
-                    Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            // Size
-                            if (product.attributesJson!.size.isNotEmpty)
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Size',
-                                      style: tt.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: cs.onSurface,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    _SizeRow(
-                                      sizes: product.attributesJson!.size,
-                                      selected: selectedSize ?? '',
-                                      onSelect: (s) => setState(() => selectedSize = s),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            const SizedBox(width: 20),
-                            // Color
-                            if (product.attributesJson!.color.isNotEmpty)
-                              _ColorSelection(
-                                colors: product.attributesJson!.color,
-                                selected: selectedColor ?? '',
-                                onChanged: (c) => setState(() => selectedColor = c),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                      ],
+                    ExpandableSpecifications(
+                      specifications: {
+                        "Brand": "Apple",
+                        "Model": "iPhone 15 Pro",
+                        "Display": "6.1 inch OLED",
+                        "Storage": "256 GB",
+                        "Camera": "48 MP",
+                        "Battery": "3274 mAh",
+                        "Processor": "A17 Pro",
+                        "OS": "iOS 17",
+                      },
                     ),
 
                   // Description
@@ -1287,6 +1263,86 @@ class _RelatedProductCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
+class ExpandableSpecifications extends StatelessWidget {
+  final Map<String, String> specifications;
+
+  const ExpandableSpecifications({
+    super.key,
+    required this.specifications,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey.shade900 : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+        ),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          dividerColor: Colors.transparent,
+        ),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+          childrenPadding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+
+          iconColor: Colors.orange,
+          collapsedIconColor: Colors.grey,
+
+          title: const Text(
+            "Specifications",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          children: specifications.entries.map((entry) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 130,
+                    child: Text(
+                      entry.key,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: isDark
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade700,
+                      ),
+                    ),
+                  ),
+                  const Text(": "),
+                  Expanded(
+                    child: Text(
+                      entry.value,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
         ),
       ),
     );

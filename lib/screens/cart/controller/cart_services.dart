@@ -120,7 +120,7 @@ class CartService {
       }
 
       final response = await http.post(
-        Uri.parse('$baseURL/customer/cart/update/$cartItemId'),
+        Uri.parse('$baseURL/customer/cart/update'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

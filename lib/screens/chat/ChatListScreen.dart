@@ -1,10 +1,38 @@
 import 'package:flutter/material.dart';
 
+import '../../services/auth_service.dart';
+import '../auth/LoginScreen.dart';
 import 'ConversationScreen.dart';
 
-class ChatListScreen extends StatelessWidget {
+class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
 
+  @override
+  State<ChatListScreen> createState() => _ChatListScreenState();
+}
+
+class _ChatListScreenState extends State<ChatListScreen> {
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    _loadChat();
+    super.initState();
+  }
+  Future<void> _loadChat() async {
+
+    final token = await AuthStorage.getToken();
+    if (token == null) {
+      // User not logged in, redirect to login
+      if (mounted) {
+        // Navigator.pushReplacementNamed(context, '/login');
+        Navigator.push(context, MaterialPageRoute(builder: (context)=> AuthScreen()));
+      }
+      return;
+    }
+
+
+  }
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -12,6 +40,7 @@ class ChatListScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: cs.background,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text("Chat", style: TextStyle(color: cs.onBackground)),
         backgroundColor: Colors.transparent,
         elevation: 0,

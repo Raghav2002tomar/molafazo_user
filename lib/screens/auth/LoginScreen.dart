@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl_phone_field/countries.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
+import '../../main.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../bottombar/MainScreen.dart';
@@ -73,7 +76,7 @@ class _AuthScreenState extends State<AuthScreen> {
       final data = jsonDecode(response.body);
 
       if (data['status'] == true) {
-        _userIdFromOtp = data['data']['user_id'];
+        _showOtpToast(data['data']['otp'].toString());
 
         setState(() {
           _isLoading = false;
@@ -81,7 +84,14 @@ class _AuthScreenState extends State<AuthScreen> {
         });
 
         _startTimer();
-        _showOtpSheet();
+
+// ⏳ Delay so snackbar shows above everything
+        Future.delayed(const Duration(milliseconds: 400), () {
+          if (mounted) {
+            _showOtpSheet();
+          }
+        });
+
       } else {
         throw data['message'];
       }
@@ -93,7 +103,65 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  void _showOtpToast(String otp) {
+    // if (kReleaseMode) return; // 🔐 dev only
 
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+
+    entry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: MediaQuery.of(context).padding.top + 12,
+        left: 16,
+        right: 16,
+        child: Material(
+          color: Colors.transparent,
+          child: AnimatedOpacity(
+            opacity: 1,
+            duration: const Duration(milliseconds: 200),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.35),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.lock_outline, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      "OTP: $otp",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    overlay.insert(entry);
+
+    // ⏳ Auto remove after 4 seconds
+    Future.delayed(const Duration(seconds: 15), () {
+      entry.remove();
+    });
+  }
 
   Future<void> _verifyOtpAndLogin() async {
     final code = _otpController.text.trim();
@@ -360,24 +428,59 @@ class _AuthScreenState extends State<AuthScreen> {
                     // Phone Input
 
                     // Phone Input with country code (default Russia)
-                  IntlPhoneField(
-                    controller: _phoneController,
-                    initialCountryCode: 'TJ', // Tajikistan (+992)
-                    disableLengthCheck: true,
-                    decoration: InputDecoration(
-                      labelText: 'Phone number',
-                      hintText: '900 12 34 56',
-                      filled: true,
-                      fillColor: cs.surfaceContainerLow,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                    IntlPhoneField(
+                      controller: _phoneController,
+                      initialCountryCode: 'TJ',
+                      disableLengthCheck: true,
+
+                      // 🔒 HARD LOCK COUNTRY (ONLY TAJIKISTAN)
+                      // 🔒 HARD LOCK COUNTRIES (TAJIKISTAN + RUSSIA)
+                      countries: const [
+                        Country(
+                          name: "Tajikistan",
+                          nameTranslations: {
+                            "en": "Tajikistan",
+                            "ru": "Таджикистан",
+                          },
+                          flag: "🇹🇯",
+                          code: "TJ",
+                          dialCode: "992",
+                          minLength: 9,
+                          maxLength: 9,
+                        ),
+                        Country(
+                          name: "Russia",
+                          nameTranslations: {
+                            "en": "Russia",
+                            "ru": "Россия",
+                          },
+                          flag: "🇷🇺",
+                          code: "RU",
+                          dialCode: "7",
+                          minLength: 10,
+                          maxLength: 10,
+                        ),
+                      ],
+
+
+                      showDropdownIcon: false,
+
+                      decoration: InputDecoration(
+                        labelText: 'Phone number',
+                        hintText: '900 12 34 56',
+                        filled: true,
+                        fillColor: cs.surfaceContainerLow,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
+
+                      onChanged: (phone) {
+                        _rawPhoneNumber = phone.number; // national number only
+                      },
                     ),
-                    onChanged: (phone) {
-                      // 🔥 ONLY NATIONAL NUMBER (NO +992)
-                      _rawPhoneNumber = phone.number;
-                    },
-                  ),
+
+
 
 
 

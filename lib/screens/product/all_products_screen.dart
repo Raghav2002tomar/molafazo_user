@@ -72,7 +72,8 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
           /// 🔹 MAIN CATEGORIES
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 38,
+              height: 80, // ✅ MUST be >= chip height
+
               child: FutureBuilder<List<CategoryModel>>(
                 future: CategoryService.fetchCategories(),
                 builder: (_, snapshot) {
@@ -82,7 +83,7 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     scrollDirection: Axis.horizontal,
                     itemCount: snapshot.data!.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
                     itemBuilder: (_, i) {
                       final cat = snapshot.data![i];
                       return GestureDetector(
@@ -95,7 +96,8 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
                         child: ValueListenableBuilder<int?>(
                           valueListenable: selectedCategoryId,
                           builder: (_, id, __) {
-                            return _CompactCategoryChip(
+                            return _CompactBigCategoryChip(
+                              image: cat.image,
                               label: cat.name,
                               selected: id == cat.id,
                             );
@@ -108,47 +110,6 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
               ),
             ),
           ),
-          // SliverToBoxAdapter(
-          //   child: SizedBox(
-          //     height: 38,
-          //     child: FutureBuilder<List<CategoryModel>>(
-          //       future: CategoryService.fetchCategories(),
-          //       builder: (_, snapshot) {
-          //         if (!snapshot.hasData) {
-          //           // return _CategoryScrollShimmer();
-          //         }
-          //
-          //         return ListView.separated(
-          //           padding: const EdgeInsets.symmetric(horizontal: 16),
-          //           scrollDirection: Axis.horizontal,
-          //           itemBuilder: (_, i) {
-          //             final cat = snapshot.data![i];
-          //             return GestureDetector(
-          //               onTap: () {
-          //                 selectedCategoryId.value = cat.id;
-          //                 selectedSubCategoryId.value = null;
-          //                 selectedChildCategoryId.value = null;
-          //                 // _fetchFilteredProducts();
-          //               },
-          //               child: ValueListenableBuilder<int?>(
-          //                 valueListenable: selectedCategoryId,
-          //                 builder: (_, id, __) {
-          //                   return _CompactCategoryChip(
-          //                     label: cat.name,
-          //                     selected: id == cat.id,
-          //                   );
-          //                 },
-          //               ),
-          //             );
-          //           },
-          //           separatorBuilder: (_, __) => const SizedBox(width: 8),
-          //           itemCount: snapshot.data!.length,
-          //         );
-          //       },
-          //     ),
-          //   ),
-          // ),
-
 
           /// 🔹 SUB CATEGORIES
           ValueListenableBuilder<int?>(
@@ -168,23 +129,7 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
                   return SliverToBoxAdapter(
                     child: Column(
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 16, top: 12, bottom: 8),
-                          child: Row(
-                            children: [
-                              Icon(Icons.subdirectory_arrow_right,
-                                  size: 16, color: cs.primary),
-                              const SizedBox(width: 6),
-                              Text(
-                                "Sub Categories",
-                                style: tt.labelLarge?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: cs.onSurface.withOpacity(0.8),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                SizedBox(height: 8,),
                         SizedBox(
                           height: 36,
                           child: ListView.separated(
@@ -242,24 +187,7 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
                   return SliverToBoxAdapter(
                     child: Column(
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 16, top: 12, bottom: 8),
-                          child: Row(
-                            children: [
-                              Icon(Icons.arrow_right_alt,
-                                  size: 16, color: cs.primary),
-                              const SizedBox(width: 6),
-                              Text(
-                                "Types",
-                                style: tt.labelMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: cs.onSurface.withOpacity(0.7),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
+                        SizedBox(height: 8,),
                         SizedBox(
                           height: 34,
                           child: ListView.separated(
@@ -351,6 +279,111 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
     );
   }
 }
+
+class _CompactBigCategoryChip extends StatelessWidget {
+  final String label;
+  final String image;
+  final bool selected;
+  final bool isSecondary;
+  final bool isChild;
+
+  const _CompactBigCategoryChip({
+    super.key,
+    required this.label,
+    required this.image,
+    this.selected = false,
+    this.isSecondary = false,
+    this.isChild = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    Color bgColor;
+    Color fgColor;
+    Color borderColor;
+
+    if (selected) {
+      bgColor = isDark ? Colors.white : Colors.black;
+      fgColor = isDark ? Colors.black : Colors.white;
+      borderColor = fgColor;
+    } else if (isChild) {
+      bgColor = cs.surfaceContainerHighest;
+      fgColor = cs.onSurface.withOpacity(0.75);
+      borderColor = cs.outlineVariant.withOpacity(0.5);
+    } else if (isSecondary) {
+      bgColor = cs.surfaceContainer;
+      fgColor = cs.onSurface.withOpacity(0.85);
+      borderColor = cs.outlineVariant;
+    } else {
+      bgColor = cs.surface;
+      fgColor = cs.onSurface;
+      borderColor = cs.outlineVariant;
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: 80,        // ✅ narrower
+      height: 70,      // ✅ taller
+      // padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
+        boxShadow: selected
+            ? [
+          BoxShadow(
+            color: cs.shadow.withOpacity(0.18),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ]
+            : null,
+      ),
+      child: Column(
+        children: [
+          // 🖼️ Image with top corners rounded only
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(12),
+              topRight: Radius.circular(12),
+            ),
+            child: SizedBox(
+              height: 40,
+              width: 80,
+              child: Image.network(
+                "${ApiService.ImagebaseUrl}${ApiService.category_images_URL}$image",
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 2),
+
+          // 📝 Text
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: fgColor,
+                fontSize: 10,
+                fontWeight:
+                selected ? FontWeight.w700 : FontWeight.w600,
+                height: 1.3,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _CompactCategoryChip extends StatelessWidget {
   final String label;
   final bool selected;

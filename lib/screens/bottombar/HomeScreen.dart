@@ -5,6 +5,7 @@ import 'package:shimmer/shimmer.dart';
 import '../product/all_products_screen.dart';
 import '../product/product_details_screen.dart';
 import '../product/store_detail_screen.dart';
+import '../search/product_search_screen.dart';
 import 'controller/BannerService.dart';
 import 'controller/category_service.dart';
 import 'controller/product_services.dart';
@@ -94,7 +95,16 @@ class _HomeScreenState extends State<HomeScreen> {
             //   title: _Header(),
             // ),
             SliverToBoxAdapter(
-                child:   Padding(
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ProductSearchScreen(),
+                    ),
+                  );
+                },
+                child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: Row(
                     children: [
@@ -136,7 +146,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                     errorBorder: InputBorder.none,
                                     focusedErrorBorder: InputBorder.none,
                                     isCollapsed: true, // tight layout
-                                    contentPadding: EdgeInsets.zero, // remove default padding
+                                    contentPadding: EdgeInsets
+                                        .zero, // remove default padding
                                   ),
                                 ),
                               ),
@@ -145,7 +156,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
 
-
                       const SizedBox(width: 12),
 
                       // ⚙️ Filter Button
@@ -153,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         height: 40,
                         width: 40,
                         decoration: BoxDecoration(
-                          color: isDark? Colors.white: Colors.black,
+                          color: isDark ? Colors.white : Colors.black,
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
@@ -163,13 +173,17 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ],
                         ),
-                        child: Icon(Icons.tune_rounded, color:isDark? Colors.black: Colors.white),
+                        child: Icon(
+                          Icons.tune_rounded,
+                          color: isDark ? Colors.black : Colors.white,
+                        ),
                       ),
                     ],
                   ),
-                )
-
+                ),
+              ),
             ),
+
             /// BANNERS
             SliverToBoxAdapter(
               child: SizedBox(
@@ -210,11 +224,15 @@ class _HomeScreenState extends State<HomeScreen> {
             ValueListenableBuilder<int?>(
               valueListenable: selectedCategoryId,
               builder: (_, catId, __) {
-                if (catId == null) return const SliverToBoxAdapter(child: SizedBox());
+                if (catId == null)
+                  return const SliverToBoxAdapter(child: SizedBox());
 
                 return SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     child: Row(
                       children: [
                         Expanded(
@@ -273,17 +291,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
             SliverToBoxAdapter(
               child: SizedBox(
-                height: 38,
+                height: 80, // ✅ MUST be >= chip height
+
                 child: FutureBuilder<List<CategoryModel>>(
                   future: CategoryService.fetchCategories(),
                   builder: (_, snapshot) {
-                    if (!snapshot.hasData) {
-                      return _CategoryScrollShimmer();
-                    }
+                    if (!snapshot.hasData) return const SizedBox();
 
                     return ListView.separated(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       scrollDirection: Axis.horizontal,
+                      itemCount: snapshot.data!.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 12),
                       itemBuilder: (_, i) {
                         final cat = snapshot.data![i];
                         return GestureDetector(
@@ -296,7 +315,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: ValueListenableBuilder<int?>(
                             valueListenable: selectedCategoryId,
                             builder: (_, id, __) {
-                              return _CompactCategoryChip(
+                              return _CompactBigCategoryChip(
+                                image: cat.image,
                                 label: cat.name,
                                 selected: id == cat.id,
                               );
@@ -304,8 +324,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         );
                       },
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
-                      itemCount: snapshot.data!.length,
                     );
                   },
                 ),
@@ -326,8 +344,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     builder: (_, snapshot) {
                       if (!snapshot.hasData) return const SizedBox();
 
-                      final category =
-                      snapshot.data!.firstWhere((c) => c.id == catId);
+                      final category = snapshot.data!.firstWhere(
+                        (c) => c.id == catId,
+                      );
 
                       if (category.subCategories.isEmpty) {
                         return const SizedBox();
@@ -336,27 +355,30 @@ class _HomeScreenState extends State<HomeScreen> {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Padding(
-                            padding: const EdgeInsets.only(left: 16, top: 12, bottom: 8),
-                            child: Row(
-                              children: [
-                                Icon(Icons.subdirectory_arrow_right,
-                                    size: 16, color: cs.primary),
-                                const SizedBox(width: 6),
-                                Text(
-                                  "Sub Categories",
-                                  style: tt.labelLarge?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: cs.onSurface.withOpacity(0.8),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                          // Padding(
+                          //   padding: const EdgeInsets.only(left: 16, top: 12, bottom: 8),
+                          //   child: Row(
+                          //     children: [
+                          //       Icon(Icons.subdirectory_arrow_right,
+                          //           size: 16, color: cs.primary),
+                          //       const SizedBox(width: 6),
+                          //       Text(
+                          //         "Sub Categories",
+                          //         style: tt.labelLarge?.copyWith(
+                          //           fontWeight: FontWeight.w600,
+                          //           color: cs.onSurface.withOpacity(0.8),
+                          //         ),
+                          //       ),
+                          //     ],
+                          //   ),
+                          // ),
+                          SizedBox(height: 8),
                           SizedBox(
                             height: 36,
                             child: ListView.separated(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               scrollDirection: Axis.horizontal,
                               itemBuilder: (_, i) {
                                 final sub = category.subCategories[i];
@@ -378,7 +400,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 );
                               },
-                              separatorBuilder: (_, __) => const SizedBox(width: 8),
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(width: 8),
                               itemCount: category.subCategories.length,
                             ),
                           ),
@@ -415,27 +438,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Padding(
-                            padding: const EdgeInsets.only(left: 16, top: 12, bottom: 8),
-                            child: Row(
-                              children: [
-                                Icon(Icons.arrow_right_alt,
-                                    size: 16, color: cs.primary),
-                                const SizedBox(width: 6),
-                                Text(
-                                  "Types",
-                                  style: tt.labelMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: cs.onSurface.withOpacity(0.7),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                          SizedBox(height: 8),
                           SizedBox(
                             height: 34,
                             child: ListView.separated(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               scrollDirection: Axis.horizontal,
                               itemBuilder: (_, i) {
                                 final child = sub.childCategories[i];
@@ -456,7 +465,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 );
                               },
-                              separatorBuilder: (_, __) => const SizedBox(width: 8),
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(width: 8),
                               itemCount: sub.childCategories.length,
                             ),
                           ),
@@ -476,7 +486,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                 child: Row(
                   children: [
-                    Icon(Icons.shopping_bag_outlined, size: 18, color: cs.primary),
+                    Icon(
+                      Icons.shopping_bag_outlined,
+                      size: 18,
+                      color: cs.primary,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       "Products",
@@ -517,8 +531,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           padding: const EdgeInsets.all(40),
                           child: Column(
                             children: [
-                              Icon(Icons.inventory_2_outlined,
-                                  size: 64, color: cs.onSurface.withOpacity(0.3)),
+                              Icon(
+                                Icons.inventory_2_outlined,
+                                size: 64,
+                                color: cs.onSurface.withOpacity(0.3),
+                              ),
                               const SizedBox(height: 12),
                               Text(
                                 "No products found",
@@ -535,36 +552,43 @@ class _HomeScreenState extends State<HomeScreen> {
                     return SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       sliver: SliverGrid(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 10,
-                          crossAxisSpacing: 10,
-                          childAspectRatio: 0.75,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              mainAxisSpacing: 10,
+                              crossAxisSpacing: 10,
+                              childAspectRatio: 0.75,
+                            ),
+                        delegate: SliverChildBuilderDelegate(
+                          (_, i) => _ProductCardCompact(product: list[i]),
+                          childCount: list.length > 6
+                              ? 6
+                              : list.length, // 👈 LIMIT
                         ),
-                          delegate: SliverChildBuilderDelegate(
-                                (_, i) => _ProductCardCompact(product: list[i]),
-                            childCount: list.length > 6 ? 6 : list.length, // 👈 LIMIT
-                          )
                       ),
                     );
                   },
                 );
               },
             ),
+
             /// STORES HEADER
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Row(
                   children: [
-                    Icon(Icons.storefront, size: 18, color: Theme.of(context).colorScheme.primary),
+                    Icon(
+                      Icons.storefront,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       "Stores",
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w700),
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ],
                 ),
@@ -616,7 +640,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-
             const SliverToBoxAdapter(child: SizedBox(height: 40)),
           ],
         ),
@@ -653,17 +676,21 @@ class _FilterBreadcrumb extends StatelessWidget {
         String breadcrumb = "";
 
         if (selectedCategoryId.value != null) {
-          final cat = categories.firstWhere((c) => c.id == selectedCategoryId.value);
+          final cat = categories.firstWhere(
+            (c) => c.id == selectedCategoryId.value,
+          );
           breadcrumb = cat.name;
 
           if (selectedSubCategoryId.value != null) {
-            final sub = cat.subCategories
-                .firstWhere((s) => s.id == selectedSubCategoryId.value);
+            final sub = cat.subCategories.firstWhere(
+              (s) => s.id == selectedSubCategoryId.value,
+            );
             breadcrumb += " > ${sub.name}";
 
             if (selectedChildCategoryId.value != null) {
-              final child = sub.childCategories
-                  .firstWhere((c) => c.id == selectedChildCategoryId.value);
+              final child = sub.childCategories.firstWhere(
+                (c) => c.id == selectedChildCategoryId.value,
+              );
               breadcrumb += " > ${child.name}";
             }
           }
@@ -744,6 +771,110 @@ class _ClearFilterButton extends StatelessWidget {
 /// ------------------------------
 /// COMPACT CATEGORY CHIP
 /// ------------------------------
+
+class _CompactBigCategoryChip extends StatelessWidget {
+  final String label;
+  final String image;
+  final bool selected;
+  final bool isSecondary;
+  final bool isChild;
+
+  const _CompactBigCategoryChip({
+    super.key,
+    required this.label,
+    required this.image,
+    this.selected = false,
+    this.isSecondary = false,
+    this.isChild = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    Color bgColor;
+    Color fgColor;
+    Color borderColor;
+
+    if (selected) {
+      bgColor = isDark ? Colors.white : Colors.black;
+      fgColor = isDark ? Colors.black : Colors.white;
+      borderColor = fgColor;
+    } else if (isChild) {
+      bgColor = cs.surfaceContainerHighest;
+      fgColor = cs.onSurface.withOpacity(0.75);
+      borderColor = cs.outlineVariant.withOpacity(0.5);
+    } else if (isSecondary) {
+      bgColor = cs.surfaceContainer;
+      fgColor = cs.onSurface.withOpacity(0.85);
+      borderColor = cs.outlineVariant;
+    } else {
+      bgColor = cs.surface;
+      fgColor = cs.onSurface;
+      borderColor = cs.outlineVariant;
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: 80, // ✅ narrower
+      height: 70, // ✅ taller
+      // padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
+        boxShadow: selected
+            ? [
+                BoxShadow(
+                  color: cs.shadow.withOpacity(0.18),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : null,
+      ),
+      child: Column(
+        children: [
+          // 🖼️ Image with top corners rounded only
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(12),
+              topRight: Radius.circular(12),
+            ),
+            child: SizedBox(
+              height: 45,
+              width: 80,
+              child: Image.network(
+                "${ApiService.ImagebaseUrl}${ApiService.category_images_URL}$image",
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 2),
+
+          // 📝 Text
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: fgColor,
+                fontSize: 10,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                height: 1.3,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _CompactCategoryChip extends StatelessWidget {
   final String label;
   final bool selected;
@@ -796,12 +927,12 @@ class _CompactCategoryChip extends StatelessWidget {
         border: Border.all(color: borderColor, width: 1),
         boxShadow: selected
             ? [
-          BoxShadow(
-            color: cs.shadow.withOpacity(0.15),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ]
+                BoxShadow(
+                  color: cs.shadow.withOpacity(0.15),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ]
             : null,
       ),
       child: Text(
@@ -844,7 +975,7 @@ class _PromoCardDynamic extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
         child: Image.network(
-          banner.image,
+          "${ApiService.ImagebaseUrl}${ApiService.banner_images_URL}${banner.image}",
           width: 240,
           height: double.infinity,
           fit: BoxFit.cover,
@@ -856,10 +987,8 @@ class _PromoCardDynamic extends StatelessWidget {
               child: Container(width: 240, color: Colors.grey),
             );
           },
-          errorBuilder: (_, __, ___) => Image.asset(
-            'assets/images/banner_error.png',
-            fit: BoxFit.cover,
-          ),
+          errorBuilder: (_, __, ___) =>
+              Image.asset('assets/images/banner_error.png', fit: BoxFit.cover),
         ),
       ),
     );
@@ -878,16 +1007,26 @@ class _ProductCardCompact extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    return InkWell(onTap: (){
-      print("ghjkl");
-      Navigator.push(context, MaterialPageRoute(builder: (context)=>ProductDetailScreen(productId: product.id
-        ,)));
-    },
+    final bool hasDiscount =
+        product.discountPrice != null && product.discountPrice != product.price;
+
+    final bool outOfStock = product.availableQuantity <= 0;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProductDetailScreen(productId: product.id),
+          ),
+        );
+      },
       child: Container(
         decoration: BoxDecoration(
           color: cs.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: cs.outlineVariant, width: 1),
+          border: Border.all(color: cs.outlineVariant),
           boxShadow: [
             BoxShadow(
               color: cs.shadow.withOpacity(0.06),
@@ -899,29 +1038,96 @@ class _ProductCardCompact extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            /// IMAGE + BADGES
             Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                child: Image.network(
-                  "${ApiService.ImagebaseUrl}/${ApiService.product_images_URL}${product.image}",
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: cs.surfaceContainerHighest,
-                    child: Icon(
-                      Icons.image_not_supported,
-                      size: 40,
-                      color: cs.onSurface.withOpacity(0.3),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(12),
+                    ),
+                    child: Image.network(
+                      "${ApiService.ImagebaseUrl}/${ApiService.product_images_URL}${product.image}",
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: cs.surfaceContainerHighest,
+                        child: Icon(
+                          Icons.image_not_supported,
+                          size: 40,
+                          color: cs.onSurface.withOpacity(0.3),
+                        ),
+                      ),
                     ),
                   ),
-                ),
+
+                  /// OUT OF STOCK
+                  if (outOfStock)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.45),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12),
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          "OUT OF STOCK",
+                          style: tt.labelLarge?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  /// DISCOUNT BADGE
+                  if (hasDiscount)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: cs.primary,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          "SALE",
+                          style: tt.labelSmall?.copyWith(
+                            color: cs.onPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
+
+            /// DETAILS
             Padding(
               padding: const EdgeInsets.all(8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  /// CATEGORY
+                  Text(
+                    product.subCategory.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: tt.labelSmall?.copyWith(
+                      color: cs.onSurface.withOpacity(0.5),
+                    ),
+                  ),
+
+                  const SizedBox(height: 2),
+
+                  /// PRODUCT NAME
                   Text(
                     product.name,
                     maxLines: 2,
@@ -931,14 +1137,51 @@ class _ProductCardCompact extends StatelessWidget {
                       height: 1.3,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "₹${product.price}",
-                    style: tt.bodyMedium?.copyWith(
-                      color: cs.primary,
-                      fontWeight: FontWeight.w700,
-                    ),
+
+                  const SizedBox(height: 6),
+
+                  /// PRICE ROW
+                  Row(
+                    children: [
+                      if (hasDiscount)
+                        Text(
+                          "₹${product.price}",
+                          style: tt.bodySmall?.copyWith(
+                            decoration: TextDecoration.lineThrough,
+                            color: cs.onSurface.withOpacity(0.5),
+                          ),
+                        ),
+                      if (hasDiscount) const SizedBox(width: 6),
+                      Text(
+                        "₹${product.discountPrice ?? product.price}",
+                        style: tt.bodyMedium?.copyWith(
+                          color: cs.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
+
+                  const SizedBox(height: 4),
+
+                  /// DELIVERY INFO (optional)
+                  if (product.deliveryAvailable)
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.local_shipping,
+                          size: 14,
+                          color: cs.onSurface.withOpacity(0.6),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          product.deliveryTime,
+                          style: tt.labelSmall?.copyWith(
+                            color: cs.onSurface.withOpacity(0.6),
+                          ),
+                        ),
+                      ],
+                    ),
                 ],
               ),
             ),
@@ -1012,7 +1255,7 @@ class _ProductGridShimmer extends StatelessWidget {
           childAspectRatio: 0.75,
         ),
         delegate: SliverChildBuilderDelegate(
-              (_, __) => Shimmer.fromColors(
+          (_, __) => Shimmer.fromColors(
             baseColor: Colors.grey.shade300,
             highlightColor: Colors.grey.shade100,
             child: Container(
@@ -1028,6 +1271,7 @@ class _ProductGridShimmer extends StatelessWidget {
     );
   }
 }
+
 class _StoreCard extends StatelessWidget {
   final StoreModel store;
   const _StoreCard({required this.store});
@@ -1037,17 +1281,16 @@ class _StoreCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    return InkWell(onTap: (){
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => StoreDetailScreen(
-            storeId: store!.id,
-            storeName:store!.name,
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                StoreDetailScreen(storeId: store!.id, storeName: store!.name),
           ),
-        ),
-      );
-    },
+        );
+      },
       child: Container(
         width: 220,
         decoration: BoxDecoration(
@@ -1067,20 +1310,34 @@ class _StoreCard extends StatelessWidget {
           children: [
             /// LOGO
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(14),
+              ),
               child: store.logo != null
                   ? Image.network(
-                "${ApiService.ImagebaseUrl}/${ApiService.store_logo_URL}${store.logo}",
-                height: 120,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              )
+                      "${ApiService.ImagebaseUrl}/${ApiService.store_logo_URL}${store.logo}",
+                      height: 120,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    )
                   : Container(
-                height: 120,
-                color: cs.surfaceContainerHighest,
-                child: Icon(Icons.store,
-                    size: 40, color: cs.onSurface.withOpacity(0.4)),
-              ),
+                      height: 120,
+                      color: cs.surfaceContainerHighest,
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: cs.primary.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.storefront_rounded,
+                            size: 50,
+                            color: cs.primary,
+                          ),
+                        ),
+                      ),
+                    ),
             ),
 
             Padding(

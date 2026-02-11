@@ -24,9 +24,8 @@ class ProductService {
     }
 
     if (childCategoryId != null) {
-      queryParams["child_category_id"] = childCategoryId.toString();
+      queryParams["child_category"] = childCategoryId.toString(); // ✅ FIX
     }
-
     /// 🔵 Convert params → query string
     final queryString = queryParams.entries
         .map((e) => "${e.key}=${e.value}")

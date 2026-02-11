@@ -1,7 +1,9 @@
+import 'package:ecom/screens/auth/LoginScreen.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/api_service.dart';
 import '../address/address_list_screen.dart';
+import '../cart/order_list_screen.dart';
 import '../profile/SettingScreen.dart';
 import '../profile/controller/profile_service.dart';
 import '../profile/controller/user_storage.dart';
@@ -32,8 +34,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _loading = false;
       });
     } catch (_) {
-      _user = await UserStorage.getUser();
+      _user = await UserStorage.getUser(); // may be null
       setState(() => _loading = false);
+    }
+  }
+
+  void _requireLogin(VoidCallback onAllowed) {
+    if (_user == null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => AuthScreen()),
+      );
+    } else {
+      onAllowed();
     }
   }
 
@@ -45,6 +58,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: cs.surface,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
         // leading: Container(
@@ -79,10 +93,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             child: IconButton(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => EditProfileScreen()),
-                );
+                _requireLogin(() {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => EditProfileScreen()),
+                  );
+                });
+
               },
               icon: Icon(
                 Icons.settings_outlined,
@@ -99,67 +116,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             children: [
               // Profile Card
-              _loading ?
-          Center(child: CircularProgressIndicator()):
-           Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: cs.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade300),
-                  boxShadow: [
-                    BoxShadow(
-                      color: cs.shadow.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(10, 10),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    // Profile Image
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(30),
-                        image:  DecorationImage(
-                          image: _user!.profilePhoto != null
-                              ? NetworkImage("${ApiService.ImagebaseUrl}${ApiService.profile_image_URL}${_user!.profilePhoto!}")
-                              : const NetworkImage('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face') as ImageProvider,
+              _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _user == null
+                  ? _buildLoginCard(context, cs)
+                  : _buildProfileCard(cs),
 
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    // Profile Info
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _user!.name,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: cs.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _user!.email,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: cs.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
 
               const SizedBox(height: 24),
 
@@ -167,21 +129,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildCard(
                 cs,
                 children: [
-                  _buildMenuItem(
-                    context,
-                    cs,
-                    Icons.person_outline,
-                    'Personal Details',
-                    () {},
-                  ),
-                  _buildDivider(cs),
+                  // _buildMenuItem(
+                  //   context,
+                  //   cs,
+                  //   Icons.person_outline,
+                  //   'Personal Details',
+                  //   () {},
+                  // ),
+                  // _buildDivider(cs),
                   _buildMenuItem(
                     context,
                     cs,
                     Icons.shopping_bag_outlined,
                     'My Order',
-                    () {},
+                        () {
+                      _requireLogin(() {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => OrderListScreen()),
+                        );
+                      });
+                    },
                   ),
+
                   _buildDivider(cs),
                   _buildMenuItem(
                     context,
@@ -196,19 +166,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     cs,
                     Icons.local_shipping_outlined,
                     'Shipping Address',
-                    () {
-                      print("jkl");
-                      Navigator.push(context, MaterialPageRoute(builder: (context)=>AddressListScreen()));
+                        () {
+                      _requireLogin(() {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => AddressListScreen()),
+                        );
+                      });
                     },
                   ),
+
                   _buildDivider(cs),
                   _buildMenuItem(
                     context,
                     cs,
                     Icons.credit_card_outlined,
                     'My Card',
-                    () {},
+                        () {
+                      _requireLogin(() {
+                        // Navigate to card screen
+                      });
+                    },
                   ),
+
                   _buildDivider(cs),
                   _buildMenuItem(
                     context,
@@ -318,6 +298,156 @@ class _ProfileScreenState extends State<ProfileScreen> {
       color: cs.outlineVariant,
     );
   }
+  Widget _buildProfileCard(ColorScheme cs) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade300),
+        boxShadow: [
+          BoxShadow(
+            color: cs.shadow.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(10, 10),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(30),
+              color: Colors.grey.shade200,
+            ),
+            child: _user?.profilePhoto != null && _user!.profilePhoto!.isNotEmpty
+                ? ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: Image.network(
+                "${ApiService.ImagebaseUrl}${ApiService.profile_image_URL}${_user!.profilePhoto!}",
+                fit: BoxFit.cover,
+              ),
+            )
+                : const Icon(
+              Icons.person,
+              size: 32,
+              color: Colors.grey,
+            ),
+          )
+,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _user!.name.isNotEmpty?   _user!.name: "User" ,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: cs.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _user!.name.isNotEmpty?  _user!.email: "user@gmail.com",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          InkWell(onTap: (){
+            Navigator.push(context, MaterialPageRoute(builder: (context)=>EditProfileScreen()));
+          }, child: Icon(Icons.arrow_forward_ios))
+        ],
+      ),
+    );
+  }
+  Widget _buildLoginCard(BuildContext context, ColorScheme cs) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return InkWell(onTap: (){
+      Navigator.push(context, MaterialPageRoute(builder: (context)=>AuthScreen()));
+    },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.black : cs.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? Colors.white12 : Colors.grey.shade300,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.25),
+              blurRadius: 12,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Icon container
+            Container(
+              height: 52,
+              width: 52,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white : Colors.black,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.lock_outline,
+                color: isDark ? Colors.black : Colors.white,
+                size: 26,
+              ),
+            ),
+
+            const SizedBox(width: 14),
+
+            // Text
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Login required",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : cs.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "Access orders, address & profile",
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark
+                          ? Colors.white70
+                          : cs.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Arrow
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: isDark ? Colors.white70 : cs.onSurfaceVariant,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 }
 
 class _CircleAction extends StatelessWidget {
@@ -360,4 +490,5 @@ class _CircleAction extends StatelessWidget {
       ),
     );
   }
+
 }

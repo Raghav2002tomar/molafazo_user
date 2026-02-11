@@ -89,7 +89,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
         slivers: [
           // Store Header with Image
           SliverAppBar(
-            expandedHeight: 180,
+            expandedHeight: 250,
             pinned: true,
             backgroundColor: cs.surface,
             elevation: 0,
@@ -119,52 +119,66 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
               const SizedBox(width: 12),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      cs.primaryContainer.withOpacity(0.3),
-                      cs.surface,
-                    ],
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Background image
+                  Image.network(
+                    "https://wallpapers.com/images/featured/grocery-store-background-c41zd4y08ityrnw1.jpg",
+                    fit: BoxFit.cover,
                   ),
-                ),
-                child: Center(
-                  child: Container(
-                    width: 150,
-                    height: 150,
-                    margin: const EdgeInsets.only(top: 40),
+
+                  // Gradient overlay to make logo readable
+                  Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: cs.shadow.withOpacity(0.15),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          cs.primaryContainer.withOpacity(0.3),
+                          cs.surface.withOpacity(0.2),
+                        ],
+                      ),
                     ),
-                    child: ClipOval(
-                      child: store.logo.isNotEmpty
-                          ? Image.network(
-                        '${ApiService.ImagebaseUrl}/${ApiService.store_logo_URL}${store.logo}',
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Icon(
+                  ),
+
+                  // Center logo
+                  Center(
+                    child: Container(
+                      width: 150,
+                      height: 150,
+                      margin: const EdgeInsets.only(top: 40),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: cs.shadow.withOpacity(0.15),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: store.logo.isNotEmpty
+                            ? Image.network(
+                          '${ApiService.ImagebaseUrl}/${ApiService.store_logo_URL}${store.logo}',
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Icon(
+                            Icons.store,
+                            size: 60,
+                            color: cs.primary,
+                          ),
+                        )
+                            : Icon(
                           Icons.store,
                           size: 60,
                           color: cs.primary,
                         ),
-                      )
-                          : Icon(
-                        Icons.store,
-                        size: 60,
-                        color: cs.primary,
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
             ),
           ),

@@ -1,8 +1,12 @@
 import 'dart:convert';
 import 'package:ecom/services/api_service.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../services/auth_service.dart';
+import '../../bottombar/MainScreen.dart';
+import '../model/order_model.dart';
 
 class OrderService {
   static const String baseURL = '${ApiService.baseUrl}'; // Replace with your actual base URL
@@ -15,17 +19,16 @@ class OrderService {
   }) async {
     try {
       final token = await AuthStorage.getToken();
-
       if (token == null) {
         return {
           'status': false,
           'message': 'Please login to place order',
-          'requiresLogin': true,
+          'goHome': true,
         };
       }
 
       final response = await http.post(
-        Uri.parse('$baseURL/api/customer/order/place'),
+        Uri.parse('$baseURL/customer/order/place'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -40,11 +43,10 @@ class OrderService {
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else if (response.statusCode == 401) {
-        await AuthStorage.logout();
         return {
           'status': false,
-          'message': 'Session expired. Please login again',
-          'requiresLogin': true,
+          'message': 'Something went wrong. Please try again.',
+          'goHome': true,
         };
       } else {
         final errorData = jsonDecode(response.body);
@@ -61,40 +63,52 @@ class OrderService {
     }
   }
 
+
   // Get order history (optional)
-  static Future<Map<String, dynamic>> getOrderHistory() async {
-    try {
-      final token = await AuthStorage.getToken();
+  /// Get order list
+  static Future<List<OrderModel>> getOrders() async {
+    final token = await AuthStorage.getToken();
 
-      if (token == null) {
-        return {
-          'status': false,
-          'message': 'Please login',
-          'requiresLogin': true,
-        };
-      }
+    final res = await http.get(
+      Uri.parse('$baseURL/customer/orders'),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
 
-      final response = await http.get(
-        Uri.parse('$baseURL/api/customer/orders'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
+    final body = jsonDecode(res.body);
 
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        return {
-          'status': false,
-          'message': 'Failed to fetch orders',
-        };
-      }
-    } catch (e) {
-      return {
-        'status': false,
-        'message': 'Error: ${e.toString()}',
-      };
+    // ✅ FIXED HERE
+    if (res.statusCode == 200 && body['status'] == true) {
+      return (body['data'] as List)
+          .map((e) => OrderModel.fromJson(e))
+          .toList();
+    }
+
+    return [];
+  }
+
+
+  /// Get order details
+  static Future<Map<String, dynamic>> getOrderDetail(int orderId) async {
+    final token = await AuthStorage.getToken();
+    if (token == null) throw Exception("Unauthorized");
+
+    final response = await http.get(
+      Uri.parse('$baseURL/customer/order/$orderId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    final body = jsonDecode(response.body);
+
+    if (response.statusCode == 200 && body['status'] == true) {
+      return body['data'];
+    } else {
+      throw Exception('Failed to load order detail');
     }
   }
+
 }

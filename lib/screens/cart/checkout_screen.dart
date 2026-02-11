@@ -6,6 +6,7 @@ import '../../providers/cart_provider.dart';
 import '../../services/api_service.dart';
 import '../address/address_list_screen.dart';
 import '../address/model/address_model.dart';
+import '../bottombar/MainScreen.dart';
 import 'controller/order_services.dart';
 import 'model/cart_model.dart';
 
@@ -840,7 +841,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       });
 
       if (result['status'] == true) {
-        // Clear cart
         await cart.refreshCart();
 
         if (mounted) {
@@ -852,14 +852,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             SnackBar(
               content: Text(result['message'] ?? 'Failed to place order'),
               backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
             ),
           );
+
+          // 👇 GO BACK TO DASHBOARD (NO LOGOUT)
+          if (result['goHome'] == true) {
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          }
         }
       }
+
     } catch (e) {
       setState(() {
         _isPlacingOrder = false;
@@ -917,6 +919,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               'Thank you for your order. You will receive a confirmation shortly.',
               style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
               textAlign: TextAlign.center,
+
             ),
             const SizedBox(height: 32),
             SizedBox(
@@ -924,7 +927,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.of(context).pop(); // Close dialog
-                  Navigator.of(context).popUntil((route) => route.isFirst); // Go to home
+                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>SimpleBottomNavScreen()));
+                  // Navigator.of(context).popUntil((route) => route.isFirst); // Go to home
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: cs.primary,
