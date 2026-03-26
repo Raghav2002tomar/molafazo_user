@@ -1,21 +1,30 @@
-
+import '../../../services/api_service.dart';
+import '../model/Banner_Model.dart';
 
 import '../../../services/api_service.dart';
 import '../model/Banner_Model.dart';
 
 class BannerService {
-  /// GET /banners
-  static Future<List<BannerModel>> fetchBanners({String? token}) async {
-    final response = await ApiService.get(
-      endpoint: '/banners',
-    );
 
-    // ApiService already normalizes response
-    if (response["success"] == true) {
-      final List list = response["data"] ?? [];
-      return list.map((e) => BannerModel.fromJson(e)).toList();
+  static Future<List<BannerModel>> fetchBanners({String? city}) async {
+
+    String endpoint = "/banners";
+
+    /// SEND CITY ONLY IF IT IS A REAL CITY
+    if (city != null && city.isNotEmpty && city != "All Cities") {
+      endpoint = "/banners?city=${Uri.encodeComponent(city)}";
+    }
+
+    final res = await ApiService.get(endpoint: endpoint);
+
+    if (res["success"] == true) {
+
+      final List data = res["data"] ?? [];
+
+      return data.map((e) => BannerModel.fromJson(e)).toList();
+
     } else {
-      throw Exception(response["message"] ?? "Failed to load banners");
+      return [];
     }
   }
 }

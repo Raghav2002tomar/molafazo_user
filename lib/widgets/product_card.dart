@@ -163,7 +163,7 @@ class ProductCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        '₹${(product.price * 80).toInt()}',
+                        '${(product.price * 80).toInt()} c.',
                         style: tt.titleSmall?.copyWith(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
@@ -172,7 +172,7 @@ class ProductCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        '₹${(product.price * 98).toInt()}',
+                        '${(product.price * 98).toInt()} c.',
                         style: tt.bodySmall?.copyWith(
                           fontSize: 11,
                           color: cs.onSurfaceVariant,

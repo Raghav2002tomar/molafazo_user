@@ -98,13 +98,14 @@ class _OnBoardingScreenState extends State<OnBoardingScreen>
 
     if (!mounted) return;
 
-    Navigator.pushReplacement(
+    Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
         builder: (_) => isLoggedIn
             ? const SimpleBottomNavScreen()
             : const AuthScreen(),
       ),
+          (route) => false,
     );
   }
 

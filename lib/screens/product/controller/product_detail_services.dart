@@ -1,35 +1,42 @@
 import 'dart:convert';
-import 'package:ecom/services/api_service.dart';
+
 import 'package:http/http.dart' as http;
 
+import '../../../services/api_service.dart';
+import '../../../services/auth_service.dart';
 import '../model/Product_Detail_model.dart';
 
 class ProductDetailService {
-  static const String baseURL = 'YOUR_BASE_URL'; // Replace with your actual base URL
-
-  /// Fetch product details by ID
-  static Future<ProductDetailResponse> fetchProductDetail(int productId) async {
+  static Future<ProductDetailResponse?> fetchProductDetail(int productId) async {
     final url = Uri.parse('${ApiService.baseUrl}/customer/product/$productId');
+    final token = await AuthStorage.getToken();
 
     try {
+      print('Fetching product detail from: $url');
+
       final response = await http.get(
         url,
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': 'Bearer YOUR_TOKEN',
+          if (token != null) 'Authorization': 'Bearer $token',
+
         },
       );
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return ProductDetailResponse.fromJson(jsonData);
       } else {
-        throw Exception('Failed to load product details: ${response.statusCode}');
+        print('Failed to load product details: ${response.statusCode}');
+        return null;
       }
     } catch (e) {
-      throw Exception('Error fetching product details: $e');
+      print('Error fetching product details: $e');
+      return null;
     }
   }
 }

@@ -1,193 +1,644 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'package:geolocator/geolocator.dart';
+
+import '../../services/auth_service.dart';
+import '../bottombar/CitySearchScreen.dart';
+import '../bottombar/controller/CityService.dart';
 import 'controller/address_services.dart';
 
 class AddAddressScreen extends StatefulWidget {
-  const AddAddressScreen({super.key});
+  final String? profileName;
+  final String? profileMobile;
+
+  const AddAddressScreen({
+    super.key,
+    this.profileName,
+    this.profileMobile,
+  });
 
   @override
   State<AddAddressScreen> createState() => _AddAddressScreenState();
 }
 
-class _AddAddressScreenState extends State<AddAddressScreen> {
+class _AddAddressScreenState extends State<AddAddressScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
 
-  final nameCtrl = TextEditingController();
-  final fullNameCtrl = TextEditingController();
-  final mobileCtrl = TextEditingController();
-  final addressCtrl = TextEditingController();
-  final cityCtrl = TextEditingController();
-  final stateCtrl = TextEditingController();
-  final pinCtrl = TextEditingController();
+  final fullNameCtrl    = TextEditingController();
+  final mobileCtrl      = TextEditingController();
+  final addressCtrl     = TextEditingController();
+  final cityCtrl        = TextEditingController();
 
-  bool isDefault = false;
-  bool _isSaving = false;
 
-  Future<void> _save() async {
+
+  bool isSaving     = false;
+  bool isDefault    = false;
+  int? selectedCityId;
+
+  int? mainCityId;
+  String? mainCityName;
+  bool _namePreFilled   = false;
+  bool _mobilePreFilled = false;
+  bool _isSomeoneElse   = false;
+
+
+
+  late AnimationController _fadeCtrl;
+  late Animation<double>   _fadeAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 350));
+    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
+    _fadeCtrl.forward();
+
+    if (widget.profileName != null && widget.profileName!.isNotEmpty) {
+      fullNameCtrl.text = widget.profileName!;
+      _namePreFilled = true;
+    }
+    if (widget.profileMobile != null && widget.profileMobile!.isNotEmpty) {
+      mobileCtrl.text = widget.profileMobile!;
+      _mobilePreFilled = true;
+    }
+    _loadFromStorage();
+  }
+
+  Future<void> _loadFromStorage() async {
+    final mobile = await AuthStorage.getMobile();
+    final name   = await AuthStorage.getName();
+    if (!mounted) return;
+    setState(() {
+      if (mobile != null && mobile.isNotEmpty) {
+        mobileCtrl.text   = mobile;
+        _mobilePreFilled  = true;
+      }
+      if (name != null && name.isNotEmpty) {
+        fullNameCtrl.text = name;
+        _namePreFilled    = true;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _fadeCtrl.dispose();
+    for (final c in [
+      fullNameCtrl,
+      mobileCtrl,
+      addressCtrl,
+      cityCtrl
+    ]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+
+
+  // ── SAVE ──────────────────────────────────────────────────────────────────
+  Future<void> save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isSaving = true);
+    setState(() => isSaving = true);
 
     try {
-      await AddressService.saveAddress(
-        data: {
-          "name": nameCtrl.text.trim(),
-          "full_name": fullNameCtrl.text.trim(),
-          "mobile": mobileCtrl.text.trim(),
-          "address": addressCtrl.text.trim(),
-          "city": cityCtrl.text.trim(),
-          "state": stateCtrl.text.trim(),
-          "pincode": pinCtrl.text.trim(),
-          "is_default": isDefault ? 1 : 0,
-        },
-      );
+      await AddressService.saveAddress(data: {
+        "name": "Address",
+        "full_name": fullNameCtrl.text,
+        "mobile": mobileCtrl.text,
+        "address": addressCtrl.text,
+        "city": cityCtrl.text,
+        "is_default": isDefault ? 1 : 0,
+      });
 
-      if (!mounted) return;
-      Navigator.pop(context, true);
+      if (mounted) Navigator.pop(context, true);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString())),
       );
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      if (mounted) {
+        setState(() => isSaving = false);
+      }
     }
   }
 
+  bool get _nameIsLocked         => _namePreFilled && !_isSomeoneElse;
+  bool get _mobileIsLocked       => _mobilePreFilled && !_isSomeoneElse;
+  bool get _showSomeoneElseOption => (_namePreFilled || _mobilePreFilled) && !_isSomeoneElse;
+
+  // ── BUILD ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final cs     = Theme.of(context).colorScheme;
+    final tt     = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Add Address"),
-        centerTitle: true,
+      backgroundColor: cs.surface,
+      appBar: _appBar(cs, tt, isDark),
+      body: SafeArea(
+        child: FadeTransition(
+          opacity: _fadeAnim,
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+              children: [
+
+                /// CONTACT INFORMATION
+                _card(cs, isDark, child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _sectionTitle(
+                        "Contact Information",
+                        Icons.person_outline_rounded,
+                        cs,
+                        tt,
+                        isDark
+                    ),
+                    const SizedBox(height: 12),
+
+                    _lockedOrField(
+                      ctrl: fullNameCtrl,
+                      label: "Full Name",
+                      icon: Icons.badge_outlined,
+                      isLocked: _nameIsLocked,
+                      cs: cs,
+                      tt: tt,
+                      isDark: isDark,
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    _lockedOrField(
+                      ctrl: mobileCtrl,
+                      label: "Mobile Number",
+                      icon: Icons.phone_outlined,
+                      isLocked: _mobileIsLocked,
+                      keyboard: TextInputType.phone,
+                      cs: cs,
+                      tt: tt,
+                      isDark: isDark,
+                    ),
+
+                    if (_showSomeoneElseOption) ...[
+                      const SizedBox(height: 12),
+                      _someoneElseBtn(cs, tt, isDark),
+                    ],
+
+                    if (_isSomeoneElse) ...[
+                      const SizedBox(height: 8),
+                      _someoneElseBanner(cs, tt, isDark),
+                    ],
+                  ],
+                )),
+
+                const SizedBox(height: 16),
+
+                /// ADDRESS DETAILS
+                _card(cs, isDark, child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+
+                    _sectionTitle(
+                        "Address Details",
+                        Icons.home_work_outlined,
+                        cs,
+                        tt,
+                        isDark
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    _inputField(
+                      ctrl: addressCtrl,
+                      label: "Full Address",
+                      icon: Icons.place_outlined,
+                      maxLines: 2,
+                      cs: cs,
+                      tt: tt,
+                      isDark: isDark,
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    _cityField(context, cs, tt, isDark),
+                  ],
+                )),
+
+                const SizedBox(height: 16),
+
+                /// DEFAULT TOGGLE
+                _card(cs, isDark, child: _defaultToggle(cs, tt, isDark)),
+
+              ],            ),
+          ),
+        ),
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _field(
-              label: "Address Name",
-              controller: nameCtrl,
-              textInputAction: TextInputAction.next,
-              validator: _required,
-            ),
-            _field(
-              label: "Full Name",
-              controller: fullNameCtrl,
-              textInputAction: TextInputAction.next,
-              validator: _required,
-            ),
-            _field(
-              label: "Mobile Number",
-              controller: mobileCtrl,
-              keyboardType: TextInputType.phone,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(10),
-              ],
-              textInputAction: TextInputAction.next,
-              validator: (v) {
-                if (v == null || v.length != 10) {
-                  return "Enter valid 10-digit mobile";
-                }
-                return null;
-              },
-            ),
-            _field(
-              label: "Address",
-              controller: addressCtrl,
-              maxLines: 2,
-              textInputAction: TextInputAction.next,
-              validator: _required,
-            ),
-            _field(
-              label: "City",
-              controller: cityCtrl,
-              textInputAction: TextInputAction.next,
-              validator: _required,
-            ),
-            _field(
-              label: "State",
-              controller: stateCtrl,
-              textInputAction: TextInputAction.next,
-              validator: _required,
-            ),
-            _field(
-              label: "Pincode",
-              controller: pinCtrl,
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(6),
-              ],
-              textInputAction: TextInputAction.done,
-              validator: (v) {
-                if (v == null || v.length != 6) {
-                  return "Enter valid 6-digit pincode";
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 8),
-            SwitchListTile.adaptive(
-              value: isDefault,
-              title: const Text("Make this default address"),
-              onChanged: (v) => setState(() => isDefault = v),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              height: 52,
-              child: ElevatedButton(
-                onPressed: _isSaving ? null : _save,
-                style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: _isSaving
-                    ? const CircularProgressIndicator(strokeWidth: 2)
-                    : const Text("Save Address"),
-              ),
-            ),
-          ],
+      bottomNavigationBar: _bottomBar(cs, tt, isDark),
+    );
+  }
+
+  // ── APP BAR ───────────────────────────────────────────────────────────────
+  AppBar _appBar(ColorScheme cs, TextTheme tt, bool isDark) => AppBar(
+    backgroundColor: cs.surface,
+    foregroundColor: cs.onSurface,
+    elevation: 0,
+    surfaceTintColor: Colors.transparent,
+    centerTitle: false,
+    leading: Padding(
+      padding: const EdgeInsets.all(8),
+      child: _CircleAction(
+        icon: Icons.arrow_back_ios_new_rounded,
+        bg: isDark ? Colors.white : Colors.black,
+        fg: isDark ? Colors.black : Colors.white,
+        onTap: () => Navigator.pop(context),
+      ),
+    ),
+    title: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("Add New Address",
+            style: tt.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700, color: cs.onSurface)),
+        Text("Fill in your delivery details",
+            style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
+      ],
+    ),
+  );
+
+  Widget _cityField(
+      BuildContext context,
+      ColorScheme cs,
+      TextTheme tt,
+      bool isDark,
+      ) {
+    return InkWell(
+      onTap: () async {
+
+        /// SAVE CURRENT MAIN CITY
+        final mainCity = await CityStorage.getCity();
+        mainCityId = mainCity["id"];
+        mainCityName = mainCity["name"];
+
+        /// OPEN CITY SEARCH
+        final city = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const CitySearchScreen(type: "address" ),
+          ),
+        );
+
+        if (city != null) {
+
+          setState(() {
+            selectedCityId = city["id"];
+            cityCtrl.text = city["name"];
+          });
+
+          if (mainCityId != null && mainCityName != null) {
+            await CityStorage.saveCity(mainCityId!, mainCityName!);
+          } else {
+            await CityStorage.removeCity();
+          }
+        }
+      },
+      child: AbsorbPointer(
+        child: _inputField(
+          ctrl: cityCtrl,
+          label: "City",
+          icon: Icons.location_city_outlined,
+          cs: cs,
+          tt: tt,
+          isDark: isDark,
+          validator: (v) {
+            if (v == null || v.isEmpty) {
+              return "Please select city";
+            }
+            return null;
+          },
         ),
       ),
     );
   }
 
-  String? _required(String? v) {
-    if (v == null || v.trim().isEmpty) {
-      return "This field is required";
+  // ── CARD ──────────────────────────────────────────────────────────────────
+  Widget _card(ColorScheme cs, bool isDark, {required Widget child}) =>
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade300),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: child,
+      );
+
+  // ── SECTION TITLE ─────────────────────────────────────────────────────────
+  Widget _sectionTitle(String title, IconData icon, ColorScheme cs,
+      TextTheme tt, bool isDark) =>
+      Row(children: [
+        _CircleAction(
+          icon: icon,
+          bg: isDark ? Colors.white : Colors.black,
+          fg: isDark ? Colors.black : Colors.white,
+          onTap: () {},
+        ),
+        const SizedBox(width: 10),
+        Text(title,
+            style: tt.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700, color: cs.onSurface)),
+      ]);
+
+  // ── SEARCH FIELD ──────────────────────────────────────────────────────────
+
+
+  Widget _searchLoader(ColorScheme cs) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 10),
+    child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+      SizedBox(width: 14, height: 14,
+          child: CircularProgressIndicator(strokeWidth: 2, color: cs.primary)),
+      const SizedBox(width: 8),
+      Text("Searching…",
+          style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+    ]),
+  );
+
+
+  // ── LOCATION BUTTON ───────────────────────────────────────────────────────
+
+  // ── LOCKED / EDITABLE ─────────────────────────────────────────────────────
+  Widget _lockedOrField({
+    required TextEditingController ctrl,
+    required String label,
+    required IconData icon,
+    required bool isLocked,
+    required ColorScheme cs,
+    required TextTheme tt,
+    required bool isDark,
+    TextInputType? keyboard,
+  }) {
+    if (isLocked) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white10 : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Row(children: [
+          Container(
+            width: 30, height: 30,
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white : Colors.black,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 15, color: isDark ? Colors.black : Colors.white),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: tt.labelSmall?.copyWith(
+                  color: cs.onSurfaceVariant, fontWeight: FontWeight.w500)),
+              const SizedBox(height: 2),
+              Text(ctrl.text, style: tt.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700, color: cs.onSurface)),
+            ],
+          )),
+          Icon(Icons.lock_outline_rounded, size: 15, color: cs.onSurfaceVariant),
+        ]),
+      );
     }
-    return null;
+    return _inputField(ctrl: ctrl, label: label, icon: icon,
+        keyboard: keyboard, cs: cs, tt: tt, isDark: isDark);
   }
 
-  Widget _field({
+  // ── SOMEONE ELSE ──────────────────────────────────────────────────────────
+  Widget _someoneElseBtn(ColorScheme cs, TextTheme tt, bool isDark) =>
+      InkWell(
+        onTap: () => setState(() => _isSomeoneElse = true),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white10 : Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: Row(children: [
+            Container(
+              width: 30, height: 30,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white : Colors.black,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.people_alt_outlined, size: 15,
+                  color: isDark ? Colors.black : Colors.white),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Deliver to someone else",
+                    style: tt.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w700, color: cs.onSurface)),
+                Text("Change recipient name & number",
+                    style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
+              ],
+            )),
+            Icon(Icons.arrow_forward_ios, size: 14, color: cs.onSurfaceVariant),
+          ]),
+        ),
+      );
+
+  Widget _someoneElseBanner(ColorScheme cs, TextTheme tt, bool isDark) =>
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white10 : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Row(children: [
+          Icon(Icons.info_outline_rounded, size: 15, color: cs.primary),
+          const SizedBox(width: 8),
+          Expanded(child: Text("Edit name & mobile for the recipient",
+              style: tt.labelSmall?.copyWith(
+                  color: cs.onSurface, fontWeight: FontWeight.w500))),
+          GestureDetector(
+            onTap: () => setState(() { _isSomeoneElse = false; _loadFromStorage(); }),
+            child: Icon(Icons.close_rounded, size: 15, color: cs.onSurfaceVariant),
+          ),
+        ]),
+      );
+
+  // ── TYPE CHIPS ────────────────────────────────────────────────────────────
+
+  // ── DEFAULT TOGGLE ────────────────────────────────────────────────────────
+  Widget _defaultToggle(ColorScheme cs, TextTheme tt, bool isDark) =>
+      Row(children: [
+        _CircleAction(
+          icon: isDefault ? Icons.star_rounded : Icons.star_outline_rounded,
+          bg: isDark ? Colors.white : Colors.black,
+          fg: isDark ? Colors.black : Colors.white,
+          onTap: () => setState(() => isDefault = !isDefault),
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Set as Default Address",
+                style: tt.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700, color: cs.onSurface)),
+            Text("Used automatically at checkout",
+                style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
+          ],
+        )),
+        Switch.adaptive(
+          value: isDefault,
+          onChanged: (v) => setState(() => isDefault = v),
+          activeColor: isDark ? Colors.white : Colors.black,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+      ]);
+
+  // ── BOTTOM BAR ────────────────────────────────────────────────────────────
+  Widget _bottomBar(ColorScheme cs, TextTheme tt, bool isDark) =>
+      Container(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 60),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          border: Border(top: BorderSide(color: Colors.grey.shade200)),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.06),
+                blurRadius: 8, offset: const Offset(0, -2)),
+          ],
+        ),
+        child: SizedBox(
+          height: 52,
+          child: ElevatedButton(
+            onPressed: isSaving ? null : save,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isDark ? Colors.white : Colors.black,
+              foregroundColor: isDark ? Colors.black : Colors.white,
+              disabledBackgroundColor: Colors.grey.shade400,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+            ),
+            child: isSaving
+                ? SizedBox(width: 20, height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2,
+                    color: isDark ? Colors.black : Colors.white))
+                : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(Icons.check_circle_outline_rounded, size: 18),
+              const SizedBox(width: 8),
+              Text("Save Address", style: tt.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.black : Colors.white)),
+            ]),
+          ),
+        ),
+      );
+
+  // ── INPUT FIELD ───────────────────────────────────────────────────────────
+  Widget _inputField({
+    required TextEditingController ctrl,
     required String label,
-    required TextEditingController controller,
-    String? Function(String?)? validator,
-    TextInputType? keyboardType,
-    List<TextInputFormatter>? inputFormatters,
-    TextInputAction? textInputAction,
+    required IconData icon,
+    required ColorScheme cs,
+    required TextTheme tt,
+    required bool isDark,
+    TextInputType? keyboard,
     int maxLines = 1,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: TextFormField(
-        controller: controller,
-        validator: validator,
-        keyboardType: keyboardType,
-        inputFormatters: inputFormatters,
-        textInputAction: textInputAction,
+    List<TextInputFormatter>? inputFormatters,
+    String? Function(String?)? validator,   // ← custom validator support
+  }) =>
+      TextFormField(
+        controller: ctrl,
+        keyboardType: keyboard,
         maxLines: maxLines,
+        inputFormatters: inputFormatters,
+        style: tt.bodyMedium?.copyWith(color: cs.onSurface),
+        // Use custom validator if provided, otherwise fall back to "Required"
+        validator: validator ?? (v) => (v == null || v.isEmpty) ? "Required" : null,
         decoration: InputDecoration(
           labelText: label,
+          labelStyle: tt.labelMedium?.copyWith(color: cs.onSurfaceVariant),
+          prefixIcon: Icon(icon, size: 18, color: cs.onSurfaceVariant),
           filled: true,
+          fillColor: isDark ? Colors.white10 : Colors.grey.shade100,
+          isDense: true,
+          contentPadding:
+          const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300)),
+          enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300)),
+          focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                  color: isDark ? Colors.white : Colors.black, width: 1.5)),
+          errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: cs.error)),
+          focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: cs.error, width: 1.5)),
+          errorStyle: TextStyle(fontSize: 11, color: cs.error),
+        ),
+      );
+}
+
+// ── SHARED CIRCLE ACTION ─────────────────────────────────────────────────────
+class _CircleAction extends StatelessWidget {
+  final IconData icon;
+  final Color bg;
+  final Color fg;
+  final VoidCallback onTap;
+
+  const _CircleAction({
+    required this.icon,
+    required this.bg,
+    required this.fg,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          height: 40, width: 40,
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8, offset: const Offset(0, 4)),
+            ],
           ),
+          child: Icon(icon, color: fg, size: 18),
         ),
       ),
     );

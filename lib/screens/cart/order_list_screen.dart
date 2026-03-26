@@ -24,7 +24,13 @@ class OrderListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-
+    String formatPrice(num price) {
+      if (price % 1 == 0) {
+        return price.toInt().toString(); // remove .00
+      } else {
+        return price.toStringAsFixed(2);
+      }
+    }
     return Scaffold(
       appBar: AppBar(title: const Text("My Orders")),
       body: FutureBuilder<List<OrderModel>>(
@@ -156,7 +162,7 @@ class OrderListScreen extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  "₹${item.price}",
+                                  "${formatPrice(double.parse(item.price.toString()))} c.",
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -172,7 +178,7 @@ class OrderListScreen extends StatelessWidget {
                         Align(
                           alignment: Alignment.centerRight,
                           child: Text(
-                            "Total: ₹${order.totalAmount}",
+              "Total: ${formatPrice(double.parse(order.totalAmount.toString()))} c.",
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,

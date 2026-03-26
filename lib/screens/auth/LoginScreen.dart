@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'package:device_info_plus/device_info_plus.dart' show DeviceInfoPlugin;
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -51,6 +54,51 @@ class _AuthScreenState extends State<AuthScreen> {
     super.dispose();
   }
 
+  static final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
+
+  /// Get device ID
+  static Future<String> getDeviceId() async {
+    try {
+      if (Platform.isAndroid) {
+        final androidInfo = await _deviceInfo.androidInfo;
+
+        // ANDROID ID (Best unique ID)
+        return androidInfo.id ?? androidInfo.model ?? "unknown_android";
+      }
+
+      if (Platform.isIOS) {
+        final iosInfo = await _deviceInfo.iosInfo;
+        return iosInfo.identifierForVendor ?? "unknown_ios";
+      }
+
+      return "unknown_device";
+    } catch (e) {
+      return "unknown_device";
+    }
+  }
+
+  /// Get device type
+  static Future<String> getDeviceType() async {
+    if (Platform.isAndroid) return "android";
+    if (Platform.isIOS) return "ios";
+    return "unknown";
+  }
+
+  /// Optional: Get full device name
+  static Future<String> getDeviceName() async {
+    if (Platform.isAndroid) {
+      final info = await _deviceInfo.androidInfo;
+      return "${info.brand} ${info.model}";
+    }
+
+    if (Platform.isIOS) {
+      final info = await _deviceInfo.iosInfo;
+      return info.name;
+    }
+
+    return "unknown";
+  }
+
   Future<void> _requestOtp() async {
     if (_rawPhoneNumber.isEmpty || _rawPhoneNumber.length < 8) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -60,6 +108,13 @@ class _AuthScreenState extends State<AuthScreen> {
     }
 
     setState(() => _isLoading = true);
+    final token = await FirebaseMessaging.instance.getToken();
+    await AuthStorage.saveFcmToken(token!);
+    await AuthStorage.saveMobile(_rawPhoneNumber);
+
+    // final fcmToken = await AuthStorage.getFcmToken();
+    final deviceId = await getDeviceId();
+    final deviceType = await getDeviceType();
 
     try {
       final response = await http.post(
@@ -67,9 +122,9 @@ class _AuthScreenState extends State<AuthScreen> {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           "phone_number": _rawPhoneNumber,
-          "device_type": "android",
-          "device_id": "abc123",
-          "fcm_token": "123456",
+          "device_type": deviceType,
+          "device_id": deviceId,
+          "fcm_token": token,
         }),
       );
 
@@ -85,21 +140,20 @@ class _AuthScreenState extends State<AuthScreen> {
 
         _startTimer();
 
-// ⏳ Delay so snackbar shows above everything
+        // ⏳ Delay so snackbar shows above everything
         Future.delayed(const Duration(milliseconds: 400), () {
           if (mounted) {
             _showOtpSheet();
           }
         });
-
       } else {
         throw data['message'];
       }
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
@@ -166,9 +220,9 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _verifyOtpAndLogin() async {
     final code = _otpController.text.trim();
     if (code.length != 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter 6-digit OTP')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Enter 6-digit OTP')));
       return;
     }
 
@@ -178,10 +232,7 @@ class _AuthScreenState extends State<AuthScreen> {
       final response = await http.post(
         Uri.parse('${ApiService.baseUrl}/customer/verify-otp'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          "phone_number": _rawPhoneNumber,
-          "otp": code,
-        }),
+        body: jsonEncode({"phone_number": _rawPhoneNumber, "otp": code}),
       );
 
       final data = jsonDecode(response.body);
@@ -193,18 +244,20 @@ class _AuthScreenState extends State<AuthScreen> {
 
         // TODO: Save token securely (SharedPreferences / SecureStorage)
 
-        Navigator.pushReplacement(
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const SimpleBottomNavScreen()),
+              (route) => false,
+
         );
       } else {
         throw data['message'];
       }
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
@@ -243,9 +296,18 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              Text('Verify OTP', style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w800, color: cs.onSurface)),
+              Text(
+                'Verify OTP',
+                style: tt.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: cs.onSurface,
+                ),
+              ),
               const SizedBox(height: 6),
-              Text('Code sent to ${_phoneController.text}', style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+              Text(
+                'Code sent to ${_phoneController.text}',
+                style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+              ),
               const SizedBox(height: 16),
 
               // Option A: Native 6 TextFields in one with inputFormatters
@@ -255,7 +317,11 @@ class _AuthScreenState extends State<AuthScreen> {
                 maxLength: 6,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 textAlign: TextAlign.center,
-                style: tt.headlineSmall?.copyWith(letterSpacing: 8, fontWeight: FontWeight.w700, color: cs.onSurface),
+                style: tt.headlineSmall?.copyWith(
+                  letterSpacing: 8,
+                  fontWeight: FontWeight.w700,
+                  color: cs.onSurface,
+                ),
                 decoration: InputDecoration(
                   counterText: '',
                   hintText: '••••••',
@@ -305,28 +371,35 @@ class _AuthScreenState extends State<AuthScreen> {
                 onCompleted: (v) => _verifyOtpAndLogin(),
               ),
               */
-
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(Icons.timer_outlined, size: 18, color: cs.onSurfaceVariant),
+                  Icon(
+                    Icons.timer_outlined,
+                    size: 18,
+                    color: cs.onSurfaceVariant,
+                  ),
                   const SizedBox(width: 6),
                   Text(
-                    _secondsLeft > 0 ? 'Resend in 0:${_secondsLeft.toString().padLeft(2, '0')}' : 'Didn’t get the code?',
+                    _secondsLeft > 0
+                        ? 'Resend in 0:${_secondsLeft.toString().padLeft(2, '0')}'
+                        : 'Didn’t get the code?',
                     style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
                   ),
                   const Spacer(),
                   TextButton(
                     onPressed: _secondsLeft == 0
                         ? () {
-                      _startTimer();
-                      // TODO: re-request code from backend
-                    }
+                            _startTimer();
+                            // TODO: re-request code from backend
+                          }
                         : null,
                     child: Text(
                       'Resend',
                       style: tt.labelLarge?.copyWith(
-                        color: _secondsLeft == 0 ? (isDark ? Colors.white : Colors.black) : cs.onSurfaceVariant,
+                        color: _secondsLeft == 0
+                            ? (isDark ? Colors.white : Colors.black)
+                            : cs.onSurfaceVariant,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -343,15 +416,27 @@ class _AuthScreenState extends State<AuthScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isDark ? Colors.white : Colors.black,
                     foregroundColor: isDark ? Colors.black : Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     elevation: 0,
                   ),
                   child: _isLoading
                       ? SizedBox(
-                    width: 24, height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: isDark ? Colors.black : Colors.white),
-                  )
-                      : Text('Verify & Continue', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700,color: isDark ? Colors.black : Colors.white)),
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: isDark ? Colors.black : Colors.white,
+                          ),
+                        )
+                      : Text(
+                          'Verify & Continue',
+                          style: tt.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.black : Colors.white,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -450,10 +535,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         ),
                         Country(
                           name: "Russia",
-                          nameTranslations: {
-                            "en": "Russia",
-                            "ru": "Россия",
-                          },
+                          nameTranslations: {"en": "Russia", "ru": "Россия"},
                           flag: "🇷🇺",
                           code: "RU",
                           dialCode: "7",
@@ -461,7 +543,6 @@ class _AuthScreenState extends State<AuthScreen> {
                           maxLength: 10,
                         ),
                       ],
-
 
                       showDropdownIcon: false,
 
@@ -480,10 +561,6 @@ class _AuthScreenState extends State<AuthScreen> {
                       },
                     ),
 
-
-
-
-
                     const SizedBox(height: 24),
 
                     // Login Button -> requests OTP then shows sheet
@@ -495,15 +572,27 @@ class _AuthScreenState extends State<AuthScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isDark ? Colors.white : Colors.black,
                           foregroundColor: isDark ? Colors.black : Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                           elevation: 0,
                         ),
                         child: _isLoading
                             ? SizedBox(
-                          width: 24, height: 24,
-                          child: CircularProgressIndicator(color: isDark ? Colors.black : Colors.white, strokeWidth: 2),
-                        )
-                            : const Text("Get OTP", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: isDark ? Colors.black : Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                "Get OTP",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                       ),
                     ),
 
@@ -515,7 +604,10 @@ class _AuthScreenState extends State<AuthScreen> {
                         Expanded(child: Divider(color: cs.outlineVariant)),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Text("or", style: TextStyle(color: cs.onSurfaceVariant)),
+                          child: Text(
+                            "or",
+                            style: TextStyle(color: cs.onSurfaceVariant),
+                          ),
                         ),
                         Expanded(child: Divider(color: cs.outlineVariant)),
                       ],
@@ -529,13 +621,28 @@ class _AuthScreenState extends State<AuthScreen> {
                       height: 48,
                       child: OutlinedButton(
                         onPressed: () {
-                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const SimpleBottomNavScreen()));
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SimpleBottomNavScreen(),
+                            ),
+                                (route) => false,
+
+                          );
                         },
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(color: cs.outlineVariant),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
-                        child: Text("Skip for now →", style: TextStyle(color: cs.onSurface.withOpacity(0.8), fontWeight: FontWeight.w600)),
+                        child: Text(
+                          "Skip for now →",
+                          style: TextStyle(
+                            color: cs.onSurface.withOpacity(0.8),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
                   ],

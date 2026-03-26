@@ -2,7 +2,9 @@
 
 import 'package:ecom/screens/product/product_list_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../providers/cart_provider.dart';
 import '../cart/cart_screen.dart';
 import '../chat/ChatListScreen.dart';
 import 'HomeScreen.dart';
@@ -60,12 +62,17 @@ class _SimpleBottomNavScreenState extends State<SimpleBottomNavScreen> {
                   label: 'Home',
                   onTap: _onTap,
                 ),
-                _NavItem(
-                  index: 1,
-                  currentIndex: _currentIndex,
-                  icon: Icons.shopping_cart_outlined,
-                  label: 'Shop',
-                  onTap: _onTap,
+                Consumer<CartProvider>(
+                  builder: (context, cart, child) {
+                    return _NavItem(
+                      index: 1,
+                      currentIndex: _currentIndex,
+                      icon: Icons.shopping_cart_outlined,
+                      label: 'Cart',
+                      onTap: _onTap,
+                      cartCount: cart.cartCount,
+                    );
+                  },
                 ),
                 _NavItem(
                   index: 2,
@@ -98,6 +105,7 @@ class _NavItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final ValueChanged<int> onTap;
+  final int cartCount;
 
   const _NavItem({
     required this.index,
@@ -105,6 +113,8 @@ class _NavItem extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.cartCount = 0,
+
   });
 
   @override
@@ -154,11 +164,42 @@ class _NavItem extends StatelessWidget {
                 borderRadius: BorderRadius.circular(999),
               ),
               padding: const EdgeInsets.all(8),
-              child: Icon(
-                icon,
-                size: 24,
-                color: selected ? iconSelected : iconUnselected,
+               child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Icon(
+            icon,
+            size: 24,
+            color: selected ? iconSelected : iconUnselected,
+          ),
+
+          if (cartCount > 0)
+            Positioned(
+              right: -6,
+              top: -6,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                constraints: const BoxConstraints(
+                  minWidth: 16,
+                  minHeight: 16,
+                ),
+                child: Text(
+                  cartCount.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
+            ),
+        ],
+      ),
             ),
             if (selected) ...[
               const SizedBox(width: 8),

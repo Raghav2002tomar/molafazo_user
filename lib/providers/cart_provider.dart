@@ -7,16 +7,35 @@ class CartProvider with ChangeNotifier {
   bool _isLoading = false;
   CartResponse? _cartData;
 
+  /// 🔥 NEW: productId -> quantity
+  Map<int, int> _cartItems = {};
+
   int get cartCount => _cartCount;
   bool get isLoading => _isLoading;
   CartResponse? get cartData => _cartData;
 
-  // Initialize cart count on app start
+  /// 🔥 Get quantity of specific product
+  int getQuantity(int productId) {
+    return _cartItems[productId] ?? 0;
+  }
+
+
+  int? getCartItemId(int productId) {
+    try {
+      return _cartData?.data?.items
+          .firstWhere((item) => item.productId == productId)
+          .id;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Initialize cart
   Future<void> initializeCart() async {
     await fetchCartCount();
   }
 
-  // Fetch cart count from API
+  /// Fetch cart from API
   Future<void> fetchCartCount() async {
     try {
       _isLoading = true;
@@ -26,9 +45,20 @@ class CartProvider with ChangeNotifier {
 
       if (result['status'] == true && result['data'] != null) {
         _cartData = CartResponse.fromJson(result);
-        _cartCount = _cartData?.data?.items.length ?? 0;
+
+        final items = _cartData?.data?.items ?? [];
+
+        _cartItems.clear();
+
+        for (var item in items) {
+          /// productId -> quantity
+          _cartItems[item.product.id] = item.quantity;
+        }
+
+        _cartCount = items.length;
       } else {
         _cartCount = 0;
+        _cartItems.clear();
         _cartData = null;
       }
 
@@ -37,40 +67,35 @@ class CartProvider with ChangeNotifier {
     } catch (e) {
       _isLoading = false;
       _cartCount = 0;
+      _cartItems.clear();
       _cartData = null;
       notifyListeners();
     }
   }
 
-  // Increment cart count (call after adding to cart)
-  void incrementCount() {
-    _cartCount++;
-    notifyListeners();
-  }
-
-  // Decrement cart count (call after removing from cart)
-  void decrementCount() {
-    if (_cartCount > 0) {
-      _cartCount--;
-      notifyListeners();
+  /// 🔥 Set product quantity locally
+  void setProductQuantity(int productId, int quantity) {
+    if (quantity <= 0) {
+      _cartItems.remove(productId);
+    } else {
+      _cartItems[productId] = quantity;
     }
-  }
 
-  // Update cart count to specific value
-  void updateCount(int count) {
-    _cartCount = count;
     notifyListeners();
   }
 
-  // Clear cart count (on logout)
+  /// Clear cart (logout)
   void clearCart() {
     _cartCount = 0;
+    _cartItems.clear();
     _cartData = null;
     notifyListeners();
   }
 
-  // Refresh cart data
+  /// Refresh cart
   Future<void> refreshCart() async {
     await fetchCartCount();
+    notifyListeners(); // 🔥 VERY IMPORTANT
+
   }
 }

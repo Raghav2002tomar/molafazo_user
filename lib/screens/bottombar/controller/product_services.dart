@@ -1,55 +1,76 @@
 import '../../../services/api_service.dart';
+import '../../../services/auth_service.dart';
 import '../model/product_model.dart';
 
 class ProductService {
-  /// 🔹 Fetch products with optional filters
-  /// Supports:
-  /// - category
-  /// - category + sub category
-  /// - category + sub + child category
+
   static Future<List<ProductModel>> fetchProducts({
-    int? categoryId,
-    int? subCategoryId,
-    int? childCategoryId,
+  int? categoryId,
+  int? subCategoryId,
+  int? childCategoryId,
+  String? city,
+  String? country,
   }) async {
-    /// 🟡 Build query params
-    final Map<String, String> queryParams = {};
 
-    if (categoryId != null) {
-      queryParams["category_id"] = categoryId.toString();
-    }
+  final Map<String, String> queryParams = {};
 
-    if (subCategoryId != null) {
-      queryParams["sub_category"] = subCategoryId.toString();
-    }
-
-    if (childCategoryId != null) {
-      queryParams["child_category"] = childCategoryId.toString(); // ✅ FIX
-    }
-    /// 🔵 Convert params → query string
-    final queryString = queryParams.entries
-        .map((e) => "${e.key}=${e.value}")
-        .join("&");
-
-    final endpoint = queryString.isEmpty
-        ? "/customer/products"           // default API call when no filters
-        : "/customer/products?$queryString";
-
-    final res = await ApiService.get(endpoint: endpoint);
-
-    if (res["success"] == true) {
-      return (res["data"] as List)
-          .map((e) => ProductModel.fromJson(e))
-          .toList();
-    } else {
-      throw Exception(res["message"] ?? "Failed to fetch products");
-    }
+  /// CATEGORY
+  if (categoryId != null) {
+  queryParams["category_id"] = categoryId.toString();
   }
 
-  /// 🔹 Fetch all products (no filters)
-  static Future<List<ProductModel>> fetchAllProducts() {
-    return fetchProducts();
+  /// SUB CATEGORY
+  if (subCategoryId != null) {
+  queryParams["subcategory_id"] = subCategoryId.toString();
   }
+
+  /// CHILD CATEGORY
+  if (childCategoryId != null) {
+  queryParams["child_category_id"] = childCategoryId.toString();
+  }
+
+  /// CITY FILTER
+  if (city != null && city.isNotEmpty && city != "null") {
+    queryParams["city"] = city;
+  }
+
+  /// COUNTRY FILTER
+  if (country != null && country.isNotEmpty) {
+  queryParams["country"] = country;
+  }
+
+  /// BUILD QUERY STRING
+  final queryString = queryParams.entries
+      .map((e) => "${e.key}=${Uri.encodeComponent(e.value)}")
+      .join("&");
+
+  final endpoint = queryString.isEmpty
+  ? "/customer/products"
+      : "/customer/products?$queryString";
+
+  final token = await AuthStorage.getToken();
+
+  final res = await ApiService.get(endpoint: endpoint,
+    token: token,   // if null → ApiService will not send Authorization header
+
+  );
+
+  if (res["success"] == true) {
+  return (res["data"] as List)
+      .map((e) => ProductModel.fromJson(e))
+      .toList();
+  } else {
+  throw Exception(res["message"] ?? "Failed to fetch products");
+  }
+  }
+
+  /// 🔹 Fetch all products
+  static Future<List<ProductModel>> fetchAllProducts({
+  String? cityId,
+  }) {
+  return fetchProducts(city: cityId, );
+  }
+
 
   /// 🔹 Fetch by category only
   static Future<List<ProductModel>> fetchProductsByCategory(int categoryId) {

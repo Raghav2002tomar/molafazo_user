@@ -1,10 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../services/api_service.dart';
+import '../bottombar/controller/CityService.dart';
 import '../bottombar/model/product_model.dart';
+import '../bottombar/widget/product_card_widget.dart';
 import '../product/product_details_screen.dart';
+import '../product/store_detail_screen.dart';
 import 'controller/product_search_api.dart';
+
 
 class ProductSearchScreen extends StatefulWidget {
   const ProductSearchScreen({super.key});
@@ -14,128 +19,266 @@ class ProductSearchScreen extends StatefulWidget {
 }
 
 class _ProductSearchScreenState extends State<ProductSearchScreen> {
-  final _api = ProductSearchApi();
-  final _controller = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
+  final ProductSearchApi _searchApi = ProductSearchApi();
+  List<ProductModel> _searchResults = [];
+  bool _isLoading = false;
+  String? _selectedCity;
+  String? _selectedCountry;
+  String? _selectedPrice;
+  Set<String> _selectedDelivery = {};
 
-  List<ProductModel> results = [];
-  bool isLoading = false;
-  Timer? _debounce;
-  String? selectedPrice;
-  final Set<String> selectedDelivery = {};
-
-  void _onSearchChanged(String query) {
-    _debounce?.cancel();
-
-    if (query.trim().isEmpty) {
-      setState(() => results.clear());
-      return;
-    }
-
-    _debounce = Timer(const Duration(milliseconds: 400), () async {
-      setState(() => isLoading = true);
-      try {
-        results = await _api.searchProducts(query);
-      } catch (_) {
-        results = [];
-      }
-      setState(() => isLoading = false);
-    });
+  @override
+  void initState() {
+    super.initState();
+    _loadCity();
+    _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
-    _debounce?.cancel();
-    _controller.dispose();
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    return Scaffold(
-      backgroundColor: cs.surface,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: cs.surface,
-        leading: const BackButton(),
-        titleSpacing: 0,
-        title: Padding(
-          padding: const EdgeInsets.only(right: 12),
-          child: _SearchField(
-            controller: _controller,
-            onChanged: _onSearchChanged,
-            onFilterTap: () {
-              _showFilterSheet(context); // ✅ Show the bottom sheet
-
-            },
-          ),
-        ),
-      ),
-
-
-      body: Builder(
-        builder: (_) {
-          if (isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (_controller.text.isNotEmpty && results.isEmpty) {
-            return _EmptySearchView(onFilterTap: () {
-              _showFilterSheet(context);
-            });
-          }
-
-          if (results.isEmpty) {
-            return _InitialSearchView();
-          }
-
-          return GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              childAspectRatio: 0.75,
-            ),
-            itemCount: results.length,
-            itemBuilder: (_, i) =>
-                _ProductCardCompact(product: results[i]),
-          );
-        },
-      ),
-    );
+  void _onSearchChanged() {
+    // You can implement debounce here if needed
   }
 
-  // ================= FILTER BOTTOM SHEET =================
+  Future<void> _loadCity() async {
 
-  void _showFilterSheet(BuildContext context) async {
+    final data = await CityStorage.getCity();
+
+    setState(() {
+      _selectedCity = data["name"];
+    });
+
+  }
+
+  Future<void> _performSearch() async {
+    if (_searchController.text.trim().isEmpty) {
+      setState(() => _searchResults = []);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final results = await _searchApi.searchProducts(
+        query: _searchController.text,
+        city: _selectedCity,
+        country: _selectedCountry,
+      );
+
+      setState(() {
+        _searchResults = results;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Search failed: $e")),
+      );
+    }
+  }
+
+  Future<void> _showFilterBottomSheet() async {
     final result = await showModalBottomSheet<_FilterResult>(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => _FilterBottomSheet(
-        initialPrice: selectedPrice,
-        initialDelivery: selectedDelivery,
+        initialPrice: _selectedPrice,
+        initialDelivery: _selectedDelivery,
       ),
     );
 
     if (result != null) {
       setState(() {
-        selectedPrice = result.price;
-        selectedDelivery
-          ..clear()
-          ..addAll(result.delivery as Iterable<String>);
+        _selectedPrice = result.price;
+        _selectedDelivery = result.delivery ?? {};
       });
+      // Re-run search with filters
+      _performSearch();
+    }
+  }
 
-      // 🔥 Call API again with filters if needed
-      // _api.searchProducts(_controller.text, filters: result);
+  void _clearCityFilter() {
+    setState(() {
+      _selectedCity = null;
+      _selectedCountry = null;
+    });
+    _performSearch();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Search Products'),
+        bottom: _selectedCity != null
+            ? PreferredSize(
+          preferredSize: const Size.fromHeight(50),
+          child: Container(
+            height: 50,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            alignment: Alignment.centerLeft,
+            child: Chip(
+              label: Text(
+                "Searching in: $_selectedCity${_selectedCountry != null ? ', $_selectedCountry' : ''}",
+              ),
+              onDeleted: _clearCityFilter,
+              deleteIcon: const Icon(Icons.close, size: 18),
+            ),
+          ),
+        )
+            : null,
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Search Field
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: _SearchField(
+                controller: _searchController,
+                onChanged: (_) => _performSearch(),
+                onFilterTap: _showFilterBottomSheet,
+              ),
+            ),
+
+            // Active Filters Display
+            if (_selectedPrice != null || _selectedDelivery.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      if (_selectedPrice != null)
+                        Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          child: Chip(
+                            label: Text(
+                              _getPriceLabel(_selectedPrice!),
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            onDeleted: () {
+                              setState(() => _selectedPrice = null);
+                              _performSearch();
+                            },
+                          ),
+                        ),
+                      if (_selectedDelivery.contains('fast'))
+                        Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          child: Chip(
+                            label: const Text('Fast Delivery'),
+                            onDeleted: () {
+                              setState(() => _selectedDelivery.remove('fast'));
+                              _performSearch();
+                            },
+                          ),
+                        ),
+                      if (_selectedDelivery.contains('free'))
+                        Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          child: Chip(
+                            label: const Text('Free Delivery'),
+                            onDeleted: () {
+                              setState(() => _selectedDelivery.remove('free'));
+                              _performSearch();
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+
+            const SizedBox(height: 8),
+
+            // Results
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _searchController.text.isEmpty
+                  ?  _InitialSearchView()
+                  : _searchResults.isEmpty
+                  ? _EmptySearchView(onFilterTap: _showFilterBottomSheet)
+                  : GridView.builder(
+                padding: const EdgeInsets.all(16),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 0.55,
+                ),
+                itemCount: _searchResults.length,
+                itemBuilder: (context, index) {
+                  final product = _searchResults[index];
+
+                  return ProductCardWidget(
+                    product: product,
+
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ProductDetailScreen(
+                            productId: product.id,
+                          ),
+                        ),
+                      );
+                    },
+
+                    onStoreTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => StoreDetailScreen(
+                            storeId: product.store.id,
+                          ),
+                        ),
+                      );
+                    },
+
+                    // onAddCart: () {
+                    //   // CartService.addProduct(product);
+                    // },
+
+                    onFavourite: () {
+                      // WishlistService.toggle(product.id);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getPriceLabel(String price) {
+    switch (price) {
+      case 'under_500':
+        return 'Under 500 c.';
+      case '500_1000':
+        return '500 - 1000 c.';
+      case 'above_1000':
+        return 'Above 1000 c.';
+      default:
+        return price;
     }
   }
 }
+
+
+
 
 class _FilterResult {
   final String? price;
@@ -219,17 +362,17 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
             spacing: 8,
             children: [
               _SelectableChip(
-                label: "Under ₹500",
+                label: "Under 500 c.",
                 selected: price == "under_500",
                 onTap: () => setState(() => price = "under_500"),
               ),
               _SelectableChip(
-                label: "₹500 - ₹1000",
+                label: "500 - 1000 c.",
                 selected: price == "500_1000",
                 onTap: () => setState(() => price = "500_1000"),
               ),
               _SelectableChip(
-                label: "Above ₹1000",
+                label: "Above 1000 c.",
                 selected: price == "above_1000",
                 onTap: () => setState(() => price = "above_1000"),
               ),
@@ -686,17 +829,19 @@ class _ProductCardCompact extends StatelessWidget {
                     children: [
                       if (hasDiscount)
                         Text(
-                          "₹${product.price}",
+                          "${product.price} c.",
                           style: tt.bodySmall?.copyWith(
                             decoration: TextDecoration.lineThrough,
+                            fontSize: 8
                           ),
                         ),
                       const SizedBox(width: 6),
                       Text(
-                        "₹${product.discountPrice ?? product.price}",
+                        "${product.discountPrice ?? product.price} c.",
                         style: tt.bodyMedium?.copyWith(
                           color: cs.primary,
                           fontWeight: FontWeight.w700,
+
                         ),
                       ),
                     ],

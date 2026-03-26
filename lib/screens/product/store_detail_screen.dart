@@ -124,8 +124,50 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                 children: [
                   // Background image
                   Image.network(
-                    "https://wallpapers.com/images/featured/grocery-store-background-c41zd4y08ityrnw1.jpg",
+                    "${ApiService.ImagebaseUrl}/${ApiService.store_background_URL}${store.storeBackgroundImage}",
+
                     fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+
+                    /// Loading indicator
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+
+                      return Container(
+                        color: Colors.grey.shade100,
+                        child: const Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
+                    },
+
+                    /// Error image
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey.shade200,
+                        child: const Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.store,
+                                size: 50,
+                                color: Colors.grey,
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                "No Store Image",
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
 
                   // Gradient overlay to make logo readable
@@ -284,9 +326,13 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.local_shipping,
-                                    size: 16, color: Colors.green.shade700),
-                                const SizedBox(width: 6),
+                                Image.asset(
+                                  "assets/images/home_delivery.png", // your delivery image
+                                  height: 40,
+                                ),
+                                // Icon(Icons.local_shipping,
+                                //     size: 16, color: Colors.green.shade700),
+                                const SizedBox(width: 8),
                                 Text(
                                   'Home Delivery',
                                   style: tt.bodySmall?.copyWith(
@@ -316,9 +362,13 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.store_outlined,
-                                    size: 16, color: Colors.blue.shade700),
-                                const SizedBox(width: 6),
+                                Image.asset(
+                                  "assets/images/restaurant.png", // your delivery image
+                                  height: 40,
+                                ),
+                                // Icon(Icons.store_outlined,
+                                //     size: 16, color: Colors.blue.shade700),
+                                const SizedBox(width: 8),
                                 Text(
                                   'Self Pickup',
                                   style: tt.bodySmall?.copyWith(
@@ -333,6 +383,50 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                     ],
                   ),
                   const SizedBox(height: 20),
+
+                  // if (store.deliveryBySeller == 1)
+                  //   Expanded(
+                  //     child: Stack(
+                  //       children: [
+                  //         Container(
+                  //           margin: const EdgeInsets.only(top: 25),
+                  //           padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
+                  //           decoration: BoxDecoration(
+                  //             color: isDark ? cs.surfaceVariant : Colors.green.shade50,
+                  //             borderRadius: BorderRadius.circular(16),
+                  //             border: Border.all(
+                  //               color: Colors.green.withOpacity(0.5),
+                  //             ),
+                  //           ),
+                  //           child: Row(
+                  //             children: [
+                  //               const SizedBox(width: 50), // space for image
+                  //               Expanded(
+                  //                 child: Text(
+                  //                   'Home Delivery',
+                  //                   textAlign: TextAlign.center,
+                  //                   style: tt.bodySmall?.copyWith(
+                  //                     color: Colors.green.shade700,
+                  //                     fontWeight: FontWeight.w600,
+                  //                   ),
+                  //                 ),
+                  //               ),
+                  //             ],
+                  //           ),
+                  //         ),
+                  //
+                  //         /// OVERLAP IMAGE
+                  //         Positioned(
+                  //           top: 0,
+                  //           left: 8,
+                  //           child: Image.asset(
+                  //             "assets/images/delivery.png", // your delivery image
+                  //             height: 50,
+                  //           ),
+                  //         ),
+                  //       ],
+                  //     ),
+                  //   ),
 
                   // Description
                   if (store.description.isNotEmpty) ...[
@@ -365,7 +459,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                   const SizedBox(height: 12),
                   _ContactRow(
                     icon: Icons.location_on_outlined,
-                    text: '${store.address}, ${store.city}, ${store.country}',
+                    text: '${store.address}',
                     cs: cs,
                     tt: tt,
                   ),
@@ -376,13 +470,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                     cs: cs,
                     tt: tt,
                   ),
-                  const SizedBox(height: 8),
-                  _ContactRow(
-                    icon: Icons.email_outlined,
-                    text: store.email,
-                    cs: cs,
-                    tt: tt,
-                  ),
+
                   const SizedBox(height: 24),
                 ],
               ),
@@ -766,7 +854,7 @@ class _StoreProductCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        '₹${hasDiscount ? product.discountPrice : product.price}',
+                        '${hasDiscount ? product.discountPrice : product.price} c.',
                         style: tt.bodyMedium?.copyWith(
                           color: cs.primary,
                           fontWeight: FontWeight.w700,
@@ -775,7 +863,7 @@ class _StoreProductCard extends StatelessWidget {
                       if (hasDiscount) ...[
                         const SizedBox(width: 6),
                         Text(
-                          '₹${product.price}',
+                          '${product.price} c.',
                           style: tt.bodySmall?.copyWith(
                             color: cs.onSurfaceVariant,
                             decoration: TextDecoration.lineThrough,

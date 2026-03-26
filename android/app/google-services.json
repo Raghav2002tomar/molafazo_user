@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "39030719678",
+    "project_id": "molafzo",
+    "storage_bucket": "molafzo.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:39030719678:android:88ce37ec88875c29a44aef",
+        "android_client_info": {
+          "package_name": "com.molafzo.user"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1Pl19ML-7HW4jGxe5KLZkILBDN6ScgVQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

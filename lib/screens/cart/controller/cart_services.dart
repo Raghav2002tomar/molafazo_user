@@ -7,10 +7,14 @@ import '../../../services/auth_service.dart';
 class CartService {
   static const String baseURL = "${ApiService.baseUrl}"; // Replace with your actual base URL
 
+
+
+
   // Add product to cart
   static Future<Map<String, dynamic>> addToCart({
     required int productId,
     required int quantity,
+    int? combinationId, // Add optional combination ID
   }) async {
     try {
       final token = await AuthStorage.getToken();
@@ -23,22 +27,28 @@ class CartService {
         };
       }
 
+      final Map<String, dynamic> body = {
+        'product_id': productId,
+        'quantity': quantity,
+      };
+
+      // Add combination_id if provided
+      if (combinationId != null && combinationId > 0) {
+        body['combination_id'] = combinationId;
+      }
+
       final response = await http.post(
         Uri.parse('$baseURL/customer/cart/add'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({
-          'product_id': productId,
-          'quantity': quantity,
-        }),
+        body: jsonEncode(body),
       );
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else if (response.statusCode == 401) {
-        // Token expired or invalid
         await AuthStorage.logout();
         return {
           'status': false,
@@ -60,6 +70,8 @@ class CartService {
   }
 
   // Get cart list
+// In cart_services.dart, update the getCartList method
+
   static Future<Map<String, dynamic>> getCartList() async {
     try {
       final token = await AuthStorage.getToken();
@@ -81,7 +93,16 @@ class CartService {
       );
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final jsonData = jsonDecode(response.body);
+
+        // Even if status is false, return the response
+        // This handles the "Cart is empty" case
+        return {
+          'status': jsonData['status'] ?? false,
+          'message': jsonData['message'] ?? '',
+          'data': jsonData['data'],
+          'requiresLogin': false,
+        };
       } else if (response.statusCode == 401) {
         await AuthStorage.logout();
         return {
@@ -93,16 +114,17 @@ class CartService {
         return {
           'status': false,
           'message': 'Failed to fetch cart',
+          'requiresLogin': false,
         };
       }
     } catch (e) {
       return {
         'status': false,
         'message': 'Error: ${e.toString()}',
+        'requiresLogin': false,
       };
     }
   }
-
   // Update cart item quantity
   static Future<Map<String, dynamic>> updateCartItem({
     required int cartItemId,
@@ -145,6 +167,24 @@ class CartService {
         'message': 'Error: ${e.toString()}',
       };
     }
+  }
+  static Future<Map<String, dynamic>> updateProductQuantity({
+    required int productId,
+    required int quantity,
+  }) async {
+
+    final token = await AuthStorage.getToken();
+
+    final res = await ApiService.post(
+      endpoint: "/customer/cart/update",
+      token: token,
+      body: {
+        "product_id": productId.toString(),
+        "quantity": quantity.toString(),
+      },
+    );
+
+    return res;
   }
 
   // Remove item from cart

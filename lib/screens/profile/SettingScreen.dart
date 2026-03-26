@@ -4,6 +4,7 @@ import 'package:ecom/screens/onboarding/OnBoardingScreen.dart';
 import 'package:ecom/services/api_service.dart';
 import 'package:ecom/services/auth_service.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
@@ -26,6 +27,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final nameCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
   final ageCtrl = TextEditingController();
+  final phoneCtrl = TextEditingController();
 
   File? profileImage;
   UserModel? user;
@@ -44,6 +46,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (user != null) {
       nameCtrl.text = user!.name;
       emailCtrl.text = user!.email;
+      phoneCtrl.text = user!.mobile ?? ""; // ✅ phone number
+
     }
     setState(() => loading = false);
   }
@@ -78,7 +82,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
         );
       }
-
+      await AuthStorage.saveName(nameCtrl.text);
       Navigator.pop(context, true);
     } catch (e) {
       final msg = e.toString().replaceFirst('Exception: ', '');
@@ -242,6 +246,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               _buildEditableField("Email", emailCtrl, cs, error: emailError),
               const SizedBox(height: 24),
 
+              _buildReadOnlyField("Phone Number", phoneCtrl, cs),
+              const SizedBox(height: 16),
+
               // Settings
               Align(
                 alignment: Alignment.centerLeft,
@@ -347,16 +354,39 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  onPressed: () {
-                    AuthStorage.logout();
-                    // TODO: Logout action
+                  onPressed: () async {
 
-                    Navigator
-                        .of(context)
-                        .pushReplacement(new MaterialPageRoute(builder: (BuildContext context) {
-                      return new OnBoardingScreen();
-                    }));
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (_) => const Center(child: CircularProgressIndicator()),
+                    );
+
+                    final success = await logout();
+
+                    Navigator.pop(context); // close loader
+
+                    if (success) {
+
+                      await AuthStorage.logout();
+
+                      // await FirebaseMessaging.instance.deleteToken();
+
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (_) => const OnBoardingScreen()),
+                            (route) => false,
+                      );
+
+                    } else {
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Logout failed")),
+                      );
+
+                    }
+
                   },
+
                   icon:  Icon(Icons.logout, color:isDark?Colors.black:  Colors.white),
                   label:  Text(
                     "Log Out",
@@ -371,6 +401,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       ),
     );
   }
+
+  static Future<bool> logout() async {
+    final token = await AuthStorage.getToken();
+
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiService.baseUrl}/logout'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        print("Logout failed: ${response.body}");
+        return false;
+      }
+
+    } catch (e) {
+      print("Logout error: $e");
+      return false;
+    }
+  }
+
 
   Widget _buildTextField(String label, String value, ColorScheme cs) {
     return Column(
@@ -481,7 +537,52 @@ Widget _buildEditableField(
     ],
   );
 }
-
+Widget _buildReadOnlyField(
+    String label,
+    TextEditingController controller,
+    ColorScheme cs,
+    ) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: TextStyle(
+          color: cs.onSurface.withOpacity(0.6),
+          fontSize: 13,
+        ),
+      ),
+      const SizedBox(height: 4),
+      TextField(
+        controller: controller,
+        readOnly: true,
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: cs.onBackground,
+        ),
+        decoration: InputDecoration(
+          border: UnderlineInputBorder(
+            borderSide: BorderSide(
+              color: cs.outline.withOpacity(0.2),
+            ),
+          ),
+          enabledBorder: UnderlineInputBorder(
+            borderSide: BorderSide(
+              color: cs.outline.withOpacity(0.2),
+            ),
+          ),
+          focusedBorder: UnderlineInputBorder(
+            borderSide: BorderSide(
+              color: cs.outline.withOpacity(0.2),
+            ),
+          ),
+          filled: false, // transparent
+        ),
+      ),
+    ],
+  );
+}
 
 class _CircleAction extends StatelessWidget {
   final IconData icon;

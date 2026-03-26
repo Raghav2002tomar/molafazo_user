@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../address/address_list_screen.dart';
 import '../cart/order_list_screen.dart';
+import '../profile/FAQ_Screen.dart';
 import '../profile/SettingScreen.dart';
 import '../profile/controller/profile_service.dart';
 import '../profile/controller/user_storage.dart';
+import '../profile/favorite_products_screen.dart';
 import '../profile/model/user_model.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -82,33 +84,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         centerTitle: false,
-        actions: [
-          Container(
-            margin: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: cs.surface,
-
-              border: Border.all(color: cs.outlineVariant),
-              borderRadius: BorderRadius.circular(25),
-            ),
-            child: IconButton(
-              onPressed: () {
-                _requireLogin(() {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => EditProfileScreen()),
-                  );
-                });
-
-              },
-              icon: Icon(
-                Icons.settings_outlined,
-                color: cs.onSurface,
-                size: 20,
-              ),
-            ),
-          ),
-        ],
+        // actions: [
+        //   Container(
+        //     margin: const EdgeInsets.all(8),
+        //     decoration: BoxDecoration(
+        //       color: cs.surface,
+        //
+        //       border: Border.all(color: cs.outlineVariant),
+        //       borderRadius: BorderRadius.circular(25),
+        //     ),
+        //     child: IconButton(
+        //       onPressed: () {
+        //         _requireLogin(() {
+        //           Navigator.push(
+        //             context,
+        //             MaterialPageRoute(builder: (context) => EditProfileScreen()),
+        //           );
+        //         });
+        //
+        //       },
+        //       icon: Icon(
+        //         Icons.settings_outlined,
+        //         color: cs.onSurface,
+        //         size: 20,
+        //       ),
+        //     ),
+        //   ),
+        // ],
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -158,7 +160,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     cs,
                     Icons.favorite_outline,
                     'My Favourites',
-                    () {},
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const FavoriteProductsScreen(),
+                        ),
+                      );
+                    },
                   ),
                   _buildDivider(cs),
                   _buildMenuItem(
@@ -189,15 +198,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     },
                   ),
 
-                  _buildDivider(cs),
-                  _buildMenuItem(
-                    context,
-                    cs,
-                    Icons.settings_outlined,
-                    'Settings',
-                    () {},
-                    isLast: true,
-                  ),
+                  // _buildDivider(cs),
+                  // _buildMenuItem(
+                  //   context,
+                  //   cs,
+                  //   Icons.settings_outlined,
+                  //   'Settings',
+                  //   () {
+                  //     Navigator.push(context, MaterialPageRoute(builder: (context)=>EditProfileScreen()));
+                  //   },
+                  //   isLast: true,
+                  // ),
                 ],
               ),
 
@@ -212,7 +223,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     cs,
                     Icons.help_outline,
                     'FAQs',
-                    () {},
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const FAQScreen()),
+                      );
+                    },
                   ),
                   _buildDivider(cs),
                   _buildMenuItem(
@@ -270,7 +286,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               icon: icon,
               bg: isDark ? Colors.white : Colors.black,
               fg: isDark ? Colors.black : Colors.white,
-              onTap: () => Navigator.pop(context),
+              onTap: () {} ,
             ),
             // Icon(icon, size: 24, color: cs.onSurface),
             const SizedBox(width: 16),
@@ -299,72 +315,78 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
   Widget _buildProfileCard(ColorScheme cs) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade300),
-        boxShadow: [
-          BoxShadow(
-            color: cs.shadow.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(10, 10),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(30),
-              color: Colors.grey.shade200,
+    return InkWell(onTap: (){
+      Navigator.push(context, MaterialPageRoute(builder: (context)=>EditProfileScreen()));
+
+    },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade300),
+          boxShadow: [
+            BoxShadow(
+              color: cs.shadow.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(10, 10),
             ),
-            child: _user?.profilePhoto != null && _user!.profilePhoto!.isNotEmpty
-                ? ClipRRect(
-              borderRadius: BorderRadius.circular(30),
-              child: Image.network(
-                "${ApiService.ImagebaseUrl}${ApiService.profile_image_URL}${_user!.profilePhoto!}",
-                fit: BoxFit.cover,
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(30),
+                color: Colors.grey.shade200,
+              ),
+              child: _user?.profilePhoto != null && _user!.profilePhoto!.isNotEmpty
+                  ? ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: Image.network(
+                  "${ApiService.ImagebaseUrl}${ApiService.profile_image_URL}${_user!.profilePhoto!}",
+                  fit: BoxFit.cover,
+                ),
+              )
+                  : const Icon(
+                Icons.person,
+                size: 32,
+                color: Colors.grey,
               ),
             )
-                : const Icon(
-              Icons.person,
-              size: 32,
-              color: Colors.grey,
-            ),
-          )
-,
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _user!.name.isNotEmpty?   _user!.name: "User" ,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: cs.onSurface,
+      ,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _user!.name.isNotEmpty?   _user!.name: "User" ,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: cs.onSurface,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _user!.name.isNotEmpty?  _user!.email: "user@gmail.com",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: cs.onSurfaceVariant,
+                  const SizedBox(height: 4),
+                  Text(
+                    _user!.mobile.toString() ?? "0987****",
+                    // _user!.name.isNotEmpty?  _user!.email: "user@gmail.com",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: cs.onSurfaceVariant,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          InkWell(onTap: (){
-            Navigator.push(context, MaterialPageRoute(builder: (context)=>EditProfileScreen()));
-          }, child: Icon(Icons.arrow_forward_ios))
-        ],
+            InkWell(onTap: (){
+              Navigator.push(context, MaterialPageRoute(builder: (context)=>EditProfileScreen()));
+            }, child: Icon(Icons.arrow_forward_ios))
+          ],
+        ),
       ),
     );
   }
