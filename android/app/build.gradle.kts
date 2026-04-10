@@ -14,15 +14,15 @@ android {
 
     namespace = "com.molafzo.user"
 
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
 
         applicationId = "com.molafzo.user"
 
-        minSdk = 23
+        minSdk = flutter.minSdkVersion
 
-        targetSdk = 35
+        targetSdk = 36
 
         versionCode = flutter.versionCode
 

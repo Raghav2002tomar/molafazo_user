@@ -49,18 +49,24 @@ class StoreInfo {
   final String country;
   final String city;
   final String address;
-  final List<int> type;  // Changed from int to List<int>
+  final List<int> type;
   final int deliveryBySeller;
   final int selfPickup;
   final String logo;
-  final String storeBackgroundImage;  // Renamed to camelCase
+  final String storeBackgroundImage;
   final String description;
   final String workingHours;
   final int statusId;
+  final String? rejectReason;
   final String? approvedAt;
   final String createdAt;
   final String updatedAt;
-  final List<String> governmentId;  // Changed to List<String>
+  final List<String> governmentId;
+  final String? backgroundColor;
+  final Map<String, dynamic>? returnPolicy;
+  final Map<String, dynamic>? deliveryPolicy;
+  final String? deliveryDays;
+  final List<Map<String, dynamic>>? socialLinks;
 
   StoreInfo({
     required this.id,
@@ -79,17 +85,22 @@ class StoreInfo {
     required this.description,
     required this.workingHours,
     required this.statusId,
+    this.rejectReason,
     this.approvedAt,
     required this.createdAt,
     required this.updatedAt,
     required this.governmentId,
+    this.backgroundColor,
+    this.returnPolicy,
+    this.deliveryPolicy,
+    this.deliveryDays,
+    this.socialLinks,
   });
 
   // Helper method to parse type field
   static List<int> _parseType(dynamic value) {
     if (value == null) return [];
 
-    // If it's already a List
     if (value is List) {
       return value.map((e) {
         if (e is int) return e;
@@ -98,11 +109,9 @@ class StoreInfo {
       }).toList();
     }
 
-    // If it's a String like "[1]"
     if (value is String) {
       try {
-        // Remove brackets and split
-        final cleaned = value.replaceAll('[', '').replaceAll(']', '');
+        final cleaned = value.replaceAll('[', '').replaceAll(']', '').replaceAll('"', '');
         if (cleaned.isEmpty) return [];
 
         final parts = cleaned.split(',');
@@ -134,12 +143,42 @@ class StoreInfo {
           return parsed.map((e) => e.toString()).toList();
         }
       } catch (e) {
-        // If it's not JSON, treat as single string
         return [value];
       }
     }
 
     return [];
+  }
+
+  // Helper method to parse JSON string to Map
+  static Map<String, dynamic>? _parseJsonToMap(dynamic value) {
+    if (value == null) return null;
+    if (value is Map) return Map<String, dynamic>.from(value);
+    if (value is String && value.isNotEmpty) {
+      try {
+        return json.decode(value);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  // Helper method to parse JSON string to List
+  static List<Map<String, dynamic>>? _parseJsonToList(dynamic value) {
+    if (value == null) return null;
+    if (value is List) return List<Map<String, dynamic>>.from(value);
+    if (value is String && value.isNotEmpty) {
+      try {
+        final parsed = json.decode(value);
+        if (parsed is List) {
+          return List<Map<String, dynamic>>.from(parsed);
+        }
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
   }
 
   factory StoreInfo.fromJson(Map<String, dynamic> json) {
@@ -160,56 +199,84 @@ class StoreInfo {
       description: json['description']?.toString() ?? '',
       workingHours: json['working_hours']?.toString() ?? '',
       statusId: json['status_id'] ?? 0,
+      rejectReason: json['reject_reason']?.toString(),
       approvedAt: json['approved_at']?.toString(),
       createdAt: json['created_at']?.toString() ?? '',
       updatedAt: json['updated_at']?.toString() ?? '',
       governmentId: _parseGovernmentId(json['government_id']),
+      backgroundColor: json['background_color']?.toString(),
+      returnPolicy: _parseJsonToMap(json['return_policy']),
+      deliveryPolicy: _parseJsonToMap(json['delivery_policy']),
+      deliveryDays: json['delivery_days']?.toString(),
+      socialLinks: _parseJsonToList(json['social_links']),
     );
   }
 }
 
 class StoreProduct {
   final int id;
+  final int? parentProductId;
   final int storeId;
   final int categoryId;
   final int? subCategoryId;
   final int? childCategoryId;
   final String name;
+  final String? article;
+  final String articleNumber;
   final String description;
   final String price;
+  final String priceBeforeDiscount;
+  final String? costPrice;
+  final String? weight;
+  final String? length;
+  final String? width;
+  final String? height;
   final String discountPrice;
   final int availableQuantity;
   final int deliveryAvailable;
-  final String deliveryPrice;
-  final String deliveryTime;
+  final String? deliveryPrice;
+  final String? deliveryTime;
   final String? characteristics;
-  final List<String> tags;  // Changed to List<String>
-  final AttributesJson? attributesJson;
+  final List<String> tags;
+  final Map<String, dynamic>? attributesJson;
   final int statusId;
-  final String paymentMode;  // Added this field
+  final String approvalStatus;
+  final String? rejectReason;
+  final int isOriginal;
   final String createdAt;
   final String updatedAt;
   final String primaryImage;
 
   StoreProduct({
     required this.id,
+    this.parentProductId,
     required this.storeId,
     required this.categoryId,
     this.subCategoryId,
     this.childCategoryId,
     required this.name,
+    this.article,
+    required this.articleNumber,
     required this.description,
     required this.price,
+    required this.priceBeforeDiscount,
+    this.costPrice,
+    this.weight,
+    this.length,
+    this.width,
+    this.height,
     required this.discountPrice,
     required this.availableQuantity,
     required this.deliveryAvailable,
-    required this.deliveryPrice,
-    required this.deliveryTime,
+    this.deliveryPrice,
+    this.deliveryTime,
     this.characteristics,
     required this.tags,
     this.attributesJson,
     required this.statusId,
-    required this.paymentMode,
+    required this.approvalStatus,
+    this.rejectReason,
+    required this.isOriginal,
     required this.createdAt,
     required this.updatedAt,
     required this.primaryImage,
@@ -234,109 +301,54 @@ class StoreProduct {
     return [];
   }
 
-  // Helper method to parse double
-  static double _parseDouble(dynamic value) {
-    if (value == null) return 0.0;
-    if (value is double) return value;
-    if (value is int) return value.toDouble();
-    if (value is String) {
-      final parsed = double.tryParse(value);
-      return parsed ?? 0.0;
+  // Helper method to parse attributes JSON
+  static Map<String, dynamic>? _parseAttributesJson(dynamic value) {
+    if (value == null) return null;
+    if (value is Map) return Map<String, dynamic>.from(value);
+    if (value is String && value.isNotEmpty) {
+      try {
+        return json.decode(value);
+      } catch (e) {
+        return null;
+      }
     }
-    return 0.0;
+    return null;
   }
 
   factory StoreProduct.fromJson(Map<String, dynamic> json) {
     return StoreProduct(
       id: json['id'] ?? 0,
+      parentProductId: json['parent_product_id'],
       storeId: json['store_id'] ?? 0,
       categoryId: json['category_id'] ?? 0,
       subCategoryId: json['sub_category_id'],
       childCategoryId: json['child_category_id'],
       name: json['name']?.toString() ?? '',
+      article: json['article']?.toString(),
+      articleNumber: json['article_number']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
       price: json['price']?.toString() ?? '0.00',
+      priceBeforeDiscount: json['price_before_discount']?.toString() ?? '0.00',
+      costPrice: json['cost_price']?.toString(),
+      weight: json['weight']?.toString(),
+      length: json['length']?.toString(),
+      width: json['width']?.toString(),
+      height: json['height']?.toString(),
       discountPrice: json['discount_price']?.toString() ?? '0.00',
       availableQuantity: json['available_quantity'] ?? 0,
       deliveryAvailable: json['delivery_available'] ?? 0,
-      deliveryPrice: json['delivery_price']?.toString() ?? '0.00',
-      deliveryTime: json['delivery_time']?.toString() ?? '',
+      deliveryPrice: json['delivery_price']?.toString(),
+      deliveryTime: json['delivery_time']?.toString(),
       characteristics: json['characteristics']?.toString(),
       tags: _parseTags(json['tags']),
-      attributesJson: json['attributes_json'] != null
-          ? AttributesJson.fromJson(json['attributes_json'])
-          : null,
+      attributesJson: _parseAttributesJson(json['attributes_json']),
       statusId: json['status_id'] ?? 0,
-      paymentMode: json['payment_mode']?.toString() ?? 'cod',
+      approvalStatus: json['approval_status']?.toString() ?? '',
+      rejectReason: json['reject_reason']?.toString(),
+      isOriginal: json['is_original'] ?? 0,
       createdAt: json['created_at']?.toString() ?? '',
       updatedAt: json['updated_at']?.toString() ?? '',
       primaryImage: json['primaryimage']?.toString() ?? '',
-    );
-  }
-}
-
-class AttributesJson {
-  final List<String> type;
-  final List<String> brand;
-  final List<String> color;
-  final List<String> material;
-  final List<String> compatibility;
-  final List<String>? ports;
-  final List<String>? power;
-  final List<String>? capacity;
-  final List<String>? features;
-  final List<String>? battery;
-  final List<String>? storage;
-  final List<String>? screenSize;
-
-  AttributesJson({
-    required this.type,
-    required this.brand,
-    required this.color,
-    required this.material,
-    required this.compatibility,
-    this.ports,
-    this.power,
-    this.capacity,
-    this.features,
-    this.battery,
-    this.storage,
-    this.screenSize,
-  });
-
-  // Helper method to parse list
-  static List<String> _parseList(dynamic value) {
-    if (value == null) return [];
-    if (value is List) {
-      return value.map((e) => e.toString()).toList();
-    }
-    if (value is String) {
-      try {
-        final parsed = json.decode(value);
-        if (parsed is List) {
-          return parsed.map((e) => e.toString()).toList();
-        }
-      } catch (e) {
-        return [value];
-      }
-    }
-    return [value.toString()];
-  }
-
-  factory AttributesJson.fromJson(Map<String, dynamic> json) {
-    return AttributesJson(
-      type: _parseList(json['type']),
-      brand: _parseList(json['brand']),
-      color: _parseList(json['color']),
-      material: _parseList(json['material']),
-      compatibility: _parseList(json['compatibility']),
-      ports: json['ports'] != null ? _parseList(json['ports']) : null,
-      power: json['power'] != null ? _parseList(json['power']) : null,
-      capacity: json['capacity'] != null ? _parseList(json['capacity']) : null,
-      features: json['features'] != null ? _parseList(json['features']) : null,
-      battery: json['battery'] != null ? _parseList(json['battery']) : null,
-      storage: json['storage'] != null ? _parseList(json['storage']) : null,
-      screenSize: json['screen_size'] != null ? _parseList(json['screen_size']) : null,
     );
   }
 }

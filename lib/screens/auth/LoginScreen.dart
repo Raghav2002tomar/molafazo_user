@@ -516,10 +516,9 @@ class _AuthScreenState extends State<AuthScreen> {
                     IntlPhoneField(
                       controller: _phoneController,
                       initialCountryCode: 'TJ',
-                      disableLengthCheck: true,
 
-                      // 🔒 HARD LOCK COUNTRY (ONLY TAJIKISTAN)
-                      // 🔒 HARD LOCK COUNTRIES (TAJIKISTAN + RUSSIA)
+                      disableLengthCheck: true, // keep this if you want custom validation
+
                       countries: const [
                         Country(
                           name: "Tajikistan",
@@ -530,8 +529,8 @@ class _AuthScreenState extends State<AuthScreen> {
                           flag: "🇹🇯",
                           code: "TJ",
                           dialCode: "992",
-                          minLength: 9,
-                          maxLength: 9,
+                          minLength: 10,
+                          maxLength: 10,
                         ),
                         Country(
                           name: "Russia",
@@ -556,8 +555,21 @@ class _AuthScreenState extends State<AuthScreen> {
                         ),
                       ),
 
+                      /// ✅ VALIDATION
+                      validator: (phone) {
+                        if (phone == null || phone.number.isEmpty) {
+                          return 'Phone number is required';
+                        }
+
+                        if (phone.number.length != 10) {
+                          return 'Enter exactly 10 digits';
+                        }
+
+                        return null;
+                      },
+
                       onChanged: (phone) {
-                        _rawPhoneNumber = phone.number; // national number only
+                        _rawPhoneNumber = phone.number;
                       },
                     ),
 

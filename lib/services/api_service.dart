@@ -3,8 +3,11 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = "https://grantoma.lt/api";
-  static const String ImagebaseUrl = "https://grantoma.lt/";
+  // https://mudir.inbozor.app/api
+  static const String baseUrl = "https://mudir.inbozor.app/api";
+  static const String ImagebaseUrl = "https://mudir.inbozor.app/";
+  // static const String baseUrl = "https://grantoma.lt/api";
+  // static const String ImagebaseUrl = "https://grantoma.lt/";
   static const String gov_id_document_URL = "/assets/gov_id_document/";
   static const String profile_image_URL = "/assets/profile_image/";
   static const String store_logo_URL = "/assets/store_logo/";

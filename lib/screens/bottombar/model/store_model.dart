@@ -22,7 +22,9 @@ class StoreModel {
   final String? approvedAt;
   final String createdAt;
   final String updatedAt;
+  final String backgroundColor;
   final List<String> governmentId;
+  final List<ProductModel>? products;
 
   StoreModel({
     required this.id,
@@ -45,6 +47,9 @@ class StoreModel {
     required this.createdAt,
     required this.updatedAt,
     required this.governmentId,
+    required this.backgroundColor,
+    this.products,
+
   });
 
   factory StoreModel.fromJson(Map<String, dynamic> json) {
@@ -66,10 +71,25 @@ class StoreModel {
       workingHours: json['working_hours']?.toString() ?? '',
       statusId: BaseModel.parseInt(json['status_id']),
       approvedAt: json['approved_at']?.toString(),
+      backgroundColor: json['background_color']?? "",
       createdAt: json['created_at']?.toString() ?? '',
       updatedAt: json['updated_at']?.toString() ?? '',
       governmentId: _parseGovernmentId(json['government_id']),
+      products: _parseProducts(json['products']),
+
     );
+  }
+  /// Parses the nested products array from the store JSON.
+  static List<ProductModel>? _parseProducts(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is! List) return null;
+    try {
+      return raw
+          .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (_) {
+      return null;
+    }
   }
   static List<String> _parseStoreTypes(dynamic type) {
     if (type == null) return [];

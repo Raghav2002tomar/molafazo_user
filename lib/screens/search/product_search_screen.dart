@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../services/api_service.dart';
+import '../bottombar/BottomNavWrapper.dart';
 import '../bottombar/controller/CityService.dart';
 import '../bottombar/model/product_model.dart';
 import '../bottombar/widget/product_card_widget.dart';
@@ -236,14 +237,34 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
                     },
 
                     onStoreTap: () {
+                      // Navigator.push(
+                      //   context,
+                      //   MaterialPageRoute(
+                      //     builder: (_) => StoreDetailScreen(
+                      //       storeId: product.store.id,
+                      //     ),
+                      //   ),
+                      // );
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => StoreDetailScreen(
-                            storeId: product.store.id,
+                          builder: (context) => BottomNavWrapper(
+                            currentIndex: 1, // Shop tab
+                            onTap: (index) {
+                              // Handle tab change - navigate to appropriate screen
+                              Navigator.pop(context);
+                              // Then change tab in main bottom nav
+                            },
+                            child: StoreDetailScreen(
+                              storeId: product.store.id,
+                              storeName: product.store!.name,
+                              // initialCategoryId: categoryId,
+                              // categoryName: categoryName,
+                            ),
                           ),
                         ),
                       );
+
                     },
 
                     // onAddCart: () {

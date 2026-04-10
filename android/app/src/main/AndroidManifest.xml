@@ -10,7 +10,7 @@
 
 
     <application
-        android:label="Molfazo"
+        android:label="inBozor"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 

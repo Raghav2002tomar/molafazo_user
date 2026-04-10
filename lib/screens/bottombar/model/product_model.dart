@@ -36,6 +36,7 @@ class ProductModel {
   final CategoryMiniModel category;
   final CategoryMiniModel subCategory;
   final List<ProductCombination>? combinations; // Add this
+  final PrimaryImage? primaryImage;
 
 
   ProductModel({
@@ -62,8 +63,10 @@ class ProductModel {
     required this.category,
     required this.subCategory,
     this.combinations,
+    this.primaryImage
 
   });
+
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     List<ProductCombination>? combinations;
@@ -105,6 +108,9 @@ class ProductModel {
       category: CategoryMiniModel.fromJson(json['category'] ?? {}),
       subCategory: CategoryMiniModel.fromJson(json['sub_category'] ?? {}),
       combinations: combinations,
+      primaryImage: json['primary_image'] != null
+          ? PrimaryImage.fromJson(json['primary_image'])
+          : null,
 
     );
 
@@ -179,6 +185,33 @@ class ProductModel {
   /// Helper
   bool get hasDiscount =>
       discountPrice != null && discountPrice != price;
+}
+
+
+class PrimaryImage {
+  final int id;
+  final int productId;
+  final String image;
+  final String? color;
+  final int isPrimary;
+
+  PrimaryImage({
+    required this.id,
+    required this.productId,
+    required this.image,
+    this.color,
+    required this.isPrimary,
+  });
+
+  factory PrimaryImage.fromJson(Map<String, dynamic> json) {
+    return PrimaryImage(
+      id: json['id'] ?? 0,
+      productId: json['product_id'] ?? 0,
+      image: json['image']?.toString() ?? '',
+      color: json['color']?.toString(),
+      isPrimary: json['is_primary'] ?? 0,
+    );
+  }
 }
 
 class ProductCombination {

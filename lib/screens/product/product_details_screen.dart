@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../providers/cart_provider.dart';
+import '../bottombar/BottomNavWrapper.dart';
 import '../bottombar/widget/product_card_widget.dart';
 import '../cart/controller/cart_services.dart';
 import '../chat/ConversationScreen.dart';
@@ -1372,15 +1373,35 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   if (product.store != null)
                     GestureDetector(
                       onTap: () {
+                        // Navigator.push(
+                        //   context,
+                        //   MaterialPageRoute(
+                        //     builder: (_) => StoreDetailScreen(
+                        //       storeId: product.store!.id,
+                        //       storeName: product.store!.name,
+                        //     ),
+                        //   ),
+                        // );
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => StoreDetailScreen(
-                              storeId: product.store!.id,
-                              storeName: product.store!.name,
+                            builder: (context) => BottomNavWrapper(
+                              currentIndex: 1, // Shop tab
+                              onTap: (index) {
+                                // Handle tab change - navigate to appropriate screen
+                                Navigator.pop(context);
+                                // Then change tab in main bottom nav
+                              },
+                              child: StoreDetailScreen(
+                                storeId: product.store!.id,
+                                storeName: product.store!.name,
+                                // initialCategoryId: categoryId,
+                                // categoryName: categoryName,
+                              ),
                             ),
                           ),
                         );
+
                       },
                       child: Container(
                         padding: const EdgeInsets.only(

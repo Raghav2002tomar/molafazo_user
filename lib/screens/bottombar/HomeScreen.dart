@@ -472,87 +472,112 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
             /// STORES LIST
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: 270,
-                child: FutureBuilder(
-                  future: StoreService.fetchStores(
-                    city: selectedCity,
-                  ),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        scrollDirection: Axis.horizontal,
-                        itemBuilder: (_, __) => Shimmer.fromColors(
-                          baseColor: Colors.grey.shade300,
-                          highlightColor: Colors.grey.shade100,
-                          child: Container(
-                            width: 220,
-                            decoration: BoxDecoration(
-                              color: Colors.grey,
-                              borderRadius: BorderRadius.circular(14),
+            // ── STORES VERTICAL LIST ─────────────────────────────────────
+            FutureBuilder<List<StoreModel>>(
+              future: StoreService.fetchStores(city: selectedCity),
+              builder: (context, snapshot) {
+                // Loading shimmer
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                            (_, __) => Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Shimmer.fromColors(
+                            baseColor: Colors.grey.shade300,
+                            highlightColor: Colors.grey.shade100,
+                            child: Container(
+                              height: 280,
+                              decoration: BoxDecoration(
+                                color: Colors.grey,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
                             ),
                           ),
                         ),
-                        separatorBuilder: (_, __) => const SizedBox(width: 12),
-                        itemCount: 3,
-                      );
-                    }
+                        childCount: 3,
+                      ),
+                    ),
+                  );
+                }
 
-                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return Center(
+                // Empty state
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 32),
+                      child: Center(
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              Icons.storefront_outlined,
-                              size: 48,
-                              color: Colors.grey.shade400,
-                            ),
+                            Icon(Icons.storefront_outlined,
+                                size: 48, color: Colors.grey.shade400),
                             const SizedBox(height: 8),
                             Text(
                               selectedCity == null
                                   ? "No stores available"
                                   : "No stores found in $selectedCity",
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                              ),
+                              style:
+                              TextStyle(color: Colors.grey.shade600),
                             ),
                           ],
                         ),
-                      );
-                    }
+                      ),
+                    ),
+                  );
+                }
 
-                    final stores = snapshot.data!;
+                final stores = snapshot.data!;
+                // Show max 4 stores on home; user can tap "View All"
+                final limited = stores.take(4).toList();
 
-                    return ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      scrollDirection: Axis.horizontal,
-                      itemBuilder: (_, i) {
-                        final store = stores[i];
-
-                        return StoreCardWidget(
-                          store: store,
+                return SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                          (_, i) => Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: StoreCardWidget(
+                          store: limited[i],
                           onTap: () {
+                            // Navigator.push(
+                            //   context,
+                            //   MaterialPageRoute(
+                            //     builder: (_) => StoreDetailScreen(
+                            //       storeId: limited[i].id,
+                            //       storeName: limited[i].id,
+                            //     ),
+                            //   ),
+                            // );
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => StoreDetailScreen(
-                                  storeId: store.id,
-                                  storeName: store.name,
+                                builder: (context) => BottomNavWrapper(
+                                  currentIndex: 1, // Shop tab
+                                  onTap: (index) {
+                                    // Handle tab change - navigate to appropriate screen
+                                    Navigator.pop(context);
+                                    // Then change tab in main bottom nav
+                                  },
+                                  child: StoreDetailScreen(
+                                    storeId: limited[i].id,
+
+                                    storeName: limited[i].id.toString(),
+                                    // initialCategoryId: categoryId,
+                                    // categoryName: categoryName,
+                                  ),
                                 ),
                               ),
                             );
+
                           },
-                        );
-                      },
-                      separatorBuilder: (_, __) => const SizedBox(width: 12),
-                      itemCount: stores.length,
-                    );
-                  },
-                ),
-              ),
+                        ),
+                      ),
+                      childCount: limited.length,
+                    ),
+                  ),
+                );
+              },
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 40)),
           ],
@@ -1032,41 +1057,127 @@ class _BigPromoCard extends StatelessWidget {
   final BannerModel banner;
   const _BigPromoCard({required this.banner});
 
+  void _handleTap(BuildContext context) {
+    if (banner.type == null || banner.linkedData == null || banner.linkedData!.isEmpty) {
+      return;
+    }
+
+    // Randomly select an ID from the list
+    final random = DateTime.now().millisecondsSinceEpoch % banner.linkedData!.length;
+    final selectedId = banner.linkedData![random];
+
+    if (banner.type == "product") {
+      // Navigate to product detail
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ProductDetailScreen(productId: int.parse(selectedId)),
+        ),
+      );
+    } else if (banner.type == "store") {
+      // Navigate to store detail
+      // Navigator.push(
+      //   context,
+      //   MaterialPageRoute(
+      //     builder: (_) => StoreDetailScreen(
+      //       storeId: int.parse(selectedId),
+      //       storeName: banner.title ?? "Store Details",
+      //     ),
+      //   ),
+      // );
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => BottomNavWrapper(
+            currentIndex: 1, // Shop tab
+            onTap: (index) {
+              // Handle tab change - navigate to appropriate screen
+              Navigator.pop(context);
+              // Then change tab in main bottom nav
+            },
+            child: StoreDetailScreen(
+              storeId: int.parse(selectedId),
+
+              storeName: banner.title ?? "Store Details",
+              // initialCategoryId: categoryId,
+              // categoryName: categoryName,
+            ),
+          ),
+        ),
+      );
+
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+    return GestureDetector(
+      onTap: () => _handleTap(context),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Stack(
+            children: [
+              Image.network(
+                banner.image,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                loadingBuilder: (context, child, progress) {
+                  if (progress == null) return child;
+                  return Shimmer.fromColors(
+                    baseColor: Colors.grey.shade300,
+                    highlightColor: Colors.grey.shade100,
+                    child: Container(color: Colors.grey),
+                  );
+                },
+                errorBuilder: (_, __, ___) =>
+                    Image.asset("assets/images/banner_error.png", fit: BoxFit.cover),
+              ),
+              // Optional: Add title overlay
+              if (banner.title != null)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.7),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                    child: Text(
+                      banner.title!,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: Image.network(
-          "${banner.image}",
-          fit: BoxFit.cover,
-          width: double.infinity,
-          loadingBuilder: (context, child, progress) {
-            if (progress == null) return child;
-
-            return Shimmer.fromColors(
-              baseColor: Colors.grey.shade300,
-              highlightColor: Colors.grey.shade100,
-              child: Container(color: Colors.grey),
-            );
-          },
-          errorBuilder: (_, __, ___) =>
-              Image.asset("assets/images/banner_error.png", fit: BoxFit.cover),
         ),
       ),
     );
   }
 }
+
 class _PromoBannerShimmer extends StatelessWidget {
   const _PromoBannerShimmer();
 
