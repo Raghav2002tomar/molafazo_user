@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
@@ -189,7 +190,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text(
-                      'ORDER RECEIPT',
+                      context.tr('txt_order_receipt'),
                       style: pw.TextStyle(
                         font: fontBold,
                         color: PdfColors.white,
@@ -200,7 +201,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     ),
                     pw.SizedBox(height: 4),
                     pw.Text(
-                      'Order #${order['order_id']}',
+                      '${context.tr('txt_order')} #${order['order_id']}',
                       style: pw.TextStyle(font: fontRegular, color: PdfColors.white, fontSize: 14),
                     ),
                     pw.SizedBox(height: 4),
@@ -250,7 +251,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   ),
                   pw.Spacer(),
                   pw.Text(
-                    'Payment: ${(order['payment_type']?.toString() ?? 'N/A').toUpperCase()}',
+                    '${context.tr('txt_payment')}: ${(order['payment_type']?.toString() ?? 'N/A').toUpperCase()}',
                     style: pw.TextStyle(font: fontRegular, fontSize: 11, color: PdfColors.grey700),
                   ),
                 ],
@@ -260,37 +261,37 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               pw.SizedBox(height: 16),
 
               // Store Information
-              _pdfSectionTitle('STORE INFORMATION', fontBold),
+              _pdfSectionTitle(context.tr('txt_store_info'), fontBold),
               pw.SizedBox(height: 10),
-              _pdfRow('Store Name', vendor?['store_name']?.toString() ?? 'N/A', fontRegular, fontBold),
-              _pdfRow('Store Address', vendor?['store_address']?.toString() ?? 'N/A', fontRegular, fontBold),
-              _pdfRow('Vendor', vendor?['vendor_name']?.toString() ?? 'N/A', fontRegular, fontBold),
-              _pdfRow('Contact', vendor?['vendor_mobile']?.toString() ?? 'N/A', fontRegular, fontBold),
+              _pdfRow(context.tr('txt_store_name'), vendor?['store_name']?.toString() ?? 'N/A', fontRegular, fontBold),
+              _pdfRow(context.tr('txt_store_address'), vendor?['store_address']?.toString() ?? 'N/A', fontRegular, fontBold),
+              _pdfRow(context.tr('txt_vendor'), vendor?['vendor_name']?.toString() ?? 'N/A', fontRegular, fontBold),
+              _pdfRow(context.tr('txt_contact'), vendor?['vendor_mobile']?.toString() ?? 'N/A', fontRegular, fontBold),
               pw.SizedBox(height: 16),
               pw.Divider(color: PdfColors.grey300, thickness: 1),
               pw.SizedBox(height: 16),
 
               // Order Information
-              _pdfSectionTitle('ORDER INFORMATION', fontBold),
+              _pdfSectionTitle(context.tr('txt_order_info'), fontBold),
               pw.SizedBox(height: 10),
-              _pdfRow('Order ID', '#${order['order_id']}', fontRegular, fontBold),
-              _pdfRow('Order Date', _formatDateTime(order['created_at'] ?? order['createdAt']), fontRegular, fontBold),
-              _pdfRow('Payment Method', (order['payment_type']?.toString() ?? 'N/A').toUpperCase(), fontRegular, fontBold),
-              _pdfRow('Delivery Type', order['delivery_method'] == 'store_pickup' ? 'Store Pickup' : 'Home Delivery', fontRegular, fontBold),
+              _pdfRow(context.tr('txt_order_id'), '#${order['order_id']}', fontRegular, fontBold),
+              _pdfRow(context.tr('txt_order_date'), _formatDateTime(order['created_at'] ?? order['createdAt']), fontRegular, fontBold),
+              _pdfRow(context.tr('txt_payment_method'), (order['payment_type']?.toString() ?? 'N/A').toUpperCase(), fontRegular, fontBold),
+              _pdfRow(context.tr('txt_delivery_type'), order['delivery_method'] == 'store_pickup' ? context.tr('title_store_pickup') : context.tr('txt_home_delivery'), fontRegular, fontBold),
               if (order['delivery_method'] != 'store_pickup')
-                _pdfRow('Delivery Address', order['delivery_address']?.toString() ?? 'No address provided', fontRegular, fontBold),
+                _pdfRow(context.tr('txt_delivery_address'), order['delivery_address']?.toString() ?? context.tr('txt_no_address_provided'), fontRegular, fontBold),
               pw.SizedBox(height: 16),
               pw.Divider(color: PdfColors.grey300, thickness: 1),
               pw.SizedBox(height: 16),
 
               // Items
-              _pdfSectionTitle('ORDER ITEMS', fontBold),
+              _pdfSectionTitle(context.tr('txt_orders_item'), fontBold),
               pw.SizedBox(height: 10),
               pw.Row(
                 children: [
-                  pw.Expanded(flex: 3, child: pw.Text('Product', style: pw.TextStyle(font: fontBold, fontSize: 11, fontWeight: pw.FontWeight.bold))),
-                  pw.Expanded(flex: 1, child: pw.Text('Qty', style: pw.TextStyle(font: fontBold, fontSize: 11, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center)),
-                  pw.Expanded(flex: 2, child: pw.Text('Price', style: pw.TextStyle(font: fontBold, fontSize: 11, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
+                  pw.Expanded(flex: 3, child: pw.Text(context.tr('txt_product'), style: pw.TextStyle(font: fontBold, fontSize: 11, fontWeight: pw.FontWeight.bold))),
+                  pw.Expanded(flex: 1, child: pw.Text(context.tr('txt_qty'), style: pw.TextStyle(font: fontBold, fontSize: 11, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center)),
+                  pw.Expanded(flex: 2, child: pw.Text(context.tr('txt_price'), style: pw.TextStyle(font: fontBold, fontSize: 11, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
                 ],
               ),
               pw.SizedBox(height: 8),
@@ -358,7 +359,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         pw.Row(
                           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                           children: [
-                            pw.Text('Subtotal:', style: pw.TextStyle(font: fontRegular, fontSize: 11)),
+                            pw.Text('${context.tr('txt_subtotal')}:', style: pw.TextStyle(font: fontRegular, fontSize: 11)),
                             pw.Text('${formatPrice(totalAmount)} c.', style: pw.TextStyle(font: fontRegular, fontSize: 11)),
                           ],
                         ),
@@ -366,7 +367,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         pw.Row(
                           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                           children: [
-                            pw.Text('Shipping:', style: pw.TextStyle(font: fontRegular, fontSize: 11)),
+                            pw.Text('${context.tr('txt_shipping')}:', style: pw.TextStyle(font: fontRegular, fontSize: 11)),
                             pw.Text('Free', style: pw.TextStyle(font: fontRegular, fontSize: 11, color: PdfColors.green700)),
                           ],
                         ),
@@ -377,7 +378,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                           children: [
                             pw.Text(
-                              'TOTAL',
+                              context.tr('txt_total_caps'),
                               style: pw.TextStyle(font: fontBold, fontSize: 14, fontWeight: pw.FontWeight.bold),
                             ),
                             pw.Text(
@@ -403,14 +404,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               pw.SizedBox(height: 16),
               pw.Center(
                 child: pw.Text(
-                  'Thank you for shopping with us!',
+                  context.tr('thanks_for_shopping'),
                   style: pw.TextStyle(font: fontRegular, fontSize: 12, color: PdfColors.grey600),
                 ),
               ),
               pw.SizedBox(height: 8),
               pw.Center(
                 child: pw.Text(
-                  'For any queries, please contact the store directly.',
+                  context.tr('for_queries_contact'),
                   style: pw.TextStyle(font: fontRegular, fontSize: 10, color: PdfColors.grey500),
                 ),
               ),
@@ -433,16 +434,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Receipt Generated'),
+          title: Text(context.tr('txt_receipt_generate')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.receipt, size: 48, color: Color(0xFF22C55E)),
               const SizedBox(height: 12),
-              Text('Receipt for Order #$orderId'),
+              Text('${context.tr('txt_receipt_for_order')} #$orderId'),
               const SizedBox(height: 8),
               Text(
-                'PDF receipt has been generated successfully',
+                context.tr('receipt_generate_success'),
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 textAlign: TextAlign.center,
               ),
@@ -451,14 +452,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
+              child: Text(context.tr('txt_close')),
             ),
             ElevatedButton.icon(
               onPressed: () async {
                 await Printing.sharePdf(bytes: bytes, filename: fileName);
               },
               icon: const Icon(Icons.share),
-              label: const Text('Share'),
+              label: Text(context.tr('txt_share')),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF22C55E),
               ),
@@ -524,7 +525,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          "Order #${widget.orderId}",
+          "${context.tr('txt_order')} #${widget.orderId}",
           style: const TextStyle(
             color: Colors.black87,
             fontSize: 17,
@@ -571,7 +572,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF22C55E),
                     ),
-                    child: const Text("Retry"),
+                    child: Text(context.tr('txt_retry')),
                   ),
                 ],
               ),
@@ -586,7 +587,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   Icon(Icons.error_outline, size: 64, color: Colors.grey.shade400),
                   const SizedBox(height: 16),
                   Text(
-                    "Failed to load order",
+                    context.tr('txt_failed_to_load_order'),
                     style: TextStyle(color: Colors.grey.shade600),
                   ),
                 ],
@@ -683,7 +684,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ),
               const Spacer(),
               Text(
-                "Order #$orderId",
+                "${context.tr('txt_order')} #$orderId",
                 style: const TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
@@ -734,18 +735,18 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Store Information",
+           Text(
+            context.tr('txt_store_information'),
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black87),
           ),
           const SizedBox(height: 14),
-          _infoRow(Icons.store_rounded, "Store Name", vendor['store_name']?.toString() ?? 'N/A'),
+          _infoRow(Icons.store_rounded, context.tr('txt_store_name'), vendor['store_name']?.toString() ?? 'N/A'),
           const SizedBox(height: 8),
-          _infoRow(Icons.location_on_rounded, "Store Address", vendor['store_address']?.toString() ?? 'N/A'),
+          _infoRow(Icons.location_on_rounded, context.tr('txt_store_address'), vendor['store_address']?.toString() ?? 'N/A'),
           const SizedBox(height: 8),
-          _infoRow(Icons.person_outline_rounded, "Vendor", vendor['vendor_name']?.toString() ?? 'N/A'),
+          _infoRow(Icons.person_outline_rounded, context.tr('txt_vendor'), vendor['vendor_name']?.toString() ?? 'N/A'),
           const SizedBox(height: 8),
-          _infoRow(Icons.phone_outlined, "Phone", vendor['vendor_mobile']?.toString() ?? 'N/A'),
+          _infoRow(Icons.phone_outlined, context.tr('txt_phone'), vendor['vendor_mobile']?.toString() ?? 'N/A'),
         ],
       ),
     );
@@ -768,16 +769,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Order Details",
+           Text(
+            context.tr('txt_order_details'),
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black87),
           ),
           const SizedBox(height: 14),
-          _infoRow(Icons.payment_rounded, "Payment Method", paymentType),
+          _infoRow(Icons.payment_rounded, context.tr('txt_payment_method'), paymentType),
           const SizedBox(height: 8),
           _infoRow(
             deliveryMethod == 'store_pickup' ? Icons.store_rounded : Icons.location_on_rounded,
-            "Delivery Address",
+            context.tr('txt_delivery_address'),
             deliveryAddress,
           ),
         ],
@@ -813,7 +814,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                "Delivery Type",
+                context.tr('txt_delivery_type'),
                 style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
               ),
               const Spacer(),
@@ -824,7 +825,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  isPickup ? "Self Pickup" : "Home Delivery",
+                  isPickup ? context.tr('txt_self_pickup') : context.tr('txt_home_delivery'),
                   style: TextStyle(
                     color: isPickup ? Colors.orange.shade700 : Colors.green.shade700,
                     fontWeight: FontWeight.w600,
@@ -837,8 +838,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           const SizedBox(height: 12),
           Text(
             isPickup
-                ? "This is a self pickup order. Please go to the store to collect your order."
-                : "Your order will be delivered to the address above.",
+                ? context.tr('txt_self_pickup_order')
+                : context.tr('txt_order_will_deliver'),
             style: TextStyle(
               fontSize: 13,
               color: isPickup ? Colors.orange.shade700 : Colors.green.shade700,
@@ -867,8 +868,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Order Items",
+          Text(
+            context.tr('txt_order_items'),
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black87),
           ),
           const SizedBox(height: 14),
@@ -984,8 +985,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            "Total Amount",
+           Text(
+            context.tr('txt_total_amount'),
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: Colors.black54),
           ),
           Text(
@@ -1008,13 +1009,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFF22C55E), width: 1.5),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.receipt_long_rounded, color: Color(0xFF22C55E), size: 20),
             SizedBox(width: 8),
             Text(
-              "Download Receipt",
+              context.tr('txt_download_receipt'),
               style: TextStyle(
                 color: Color(0xFF22C55E),
                 fontWeight: FontWeight.w600,
@@ -1141,12 +1142,12 @@ class _ReviewFormState extends State<ReviewForm> {
 
   Future<void> submit() async {
     if (_rating == 0) {
-      show("Select rating");
+      show(context.tr('txt_select_rating'));
       return;
     }
 
     if (_comment.text.isEmpty) {
-      show("Write review");
+      show(context.tr('txt_write_review'));
       return;
     }
 
@@ -1244,8 +1245,8 @@ class _ReviewFormState extends State<ReviewForm> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Write Review",
+                   Text(
+                    context.tr('txt_write_review'),
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -1274,8 +1275,8 @@ class _ReviewFormState extends State<ReviewForm> {
           ),
           child: Column(
             children: [
-              const Text(
-                "Your Rating",
+               Text(
+                context.tr('txt_your_rating'),
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 10),
@@ -1304,8 +1305,8 @@ class _ReviewFormState extends State<ReviewForm> {
           ),
         ),
         const SizedBox(height: 18),
-        const Text(
-          "Your Review",
+         Text(
+          context.tr('txt_your_review'),
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
@@ -1313,7 +1314,7 @@ class _ReviewFormState extends State<ReviewForm> {
           controller: _comment,
           maxLines: 4,
           decoration: InputDecoration(
-            hintText: "Share your experience...",
+            hintText: context.tr('txt_share_your_experience'),
             filled: true,
             fillColor: Colors.grey.shade50,
             contentPadding: const EdgeInsets.all(14),
@@ -1334,8 +1335,8 @@ class _ReviewFormState extends State<ReviewForm> {
         const SizedBox(height: 18),
         Row(
           children: [
-            const Text(
-              "Add Photos",
+             Text(
+              context.tr('txt_add_photo'),
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
             const Spacer(),
@@ -1379,8 +1380,8 @@ class _ReviewFormState extends State<ReviewForm> {
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                               ),
-                              const Text(
-                                "Upload Photo",
+                               Text(
+                                context.tr('txt_upload_photo'),
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -1417,8 +1418,8 @@ class _ReviewFormState extends State<ReviewForm> {
                                               ),
                                             ),
                                             const SizedBox(height: 10),
-                                            const Text(
-                                              "Camera",
+                                             Text(
+                                              context.tr('txt_camera'),
                                               style: TextStyle(fontWeight: FontWeight.w600),
                                             ),
                                           ],
@@ -1455,8 +1456,8 @@ class _ReviewFormState extends State<ReviewForm> {
                                               ),
                                             ),
                                             const SizedBox(height: 10),
-                                            const Text(
-                                              "Gallery",
+                                             Text(
+                                              context.tr('txt_gallery'),
                                               style: TextStyle(fontWeight: FontWeight.w600),
                                             ),
                                           ],
@@ -1548,8 +1549,8 @@ class _ReviewFormState extends State<ReviewForm> {
                 strokeWidth: 2,
               ),
             )
-                : const Text(
-              "Submit Review",
+                :  Text(
+              context.tr('txt_submit_review'),
               style: TextStyle(fontSize: 16, color: Colors.white),
             ),
           ),

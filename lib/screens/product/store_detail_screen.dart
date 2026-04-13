@@ -1,6 +1,8 @@
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 // import 'package:url_launcher/url_launcher.dart';
 import '../../services/api_service.dart';
 import '../search/product_search_screen.dart';
@@ -452,7 +454,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
             children: [
               Text(
                 _selectedCategory == 'All'
-                    ? 'All products'
+                    ? context.tr('txt_all_products')
                     : _selectedCategory,
                 style: TextStyle(
                   fontSize: 22,
@@ -504,8 +506,8 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
                 const SizedBox(height: 12),
                 Text(
                   _selectedCategory == 'All'
-                      ? 'No products available'
-                      : 'No products in "$_selectedCategory"',
+                      ? context.tr('no_product_available')
+                      : '${context.tr('txt_no_products_in')} "$_selectedCategory"',
                   style:
                   TextStyle(color: _subTextColor, fontSize: 14),
                 ),
@@ -754,7 +756,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
           const CircularProgressIndicator(
               color: Colors.black, strokeWidth: 2),
           const SizedBox(height: 14),
-          Text('Loading store…',
+          Text(context.tr('txt_loading_store'),
               style: TextStyle(
                   color: Colors.grey.shade500, fontSize: 13)),
         ],
@@ -780,7 +782,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
           const Icon(Icons.error_outline,
               size: 64, color: Colors.redAccent),
           const SizedBox(height: 16),
-          Text(_errorMessage ?? 'Something went wrong',
+          Text(_errorMessage ?? context.tr('txt_something_went_wrong'),
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.grey)),
           const SizedBox(height: 24),
@@ -791,7 +793,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30))),
-            child: const Text('Retry'),
+            child:  Text(context.tr('txt_retry')),
           ),
         ],
       ),
@@ -892,7 +894,7 @@ class _HeroBannerLocal extends StatelessWidget {
                 padding:
                 const EdgeInsets.symmetric(horizontal: 40),
                 child: Text(
-                  storeName.isEmpty ? 'Store' : storeName,
+                  storeName.isEmpty ? context.tr('txt_store') : storeName,
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -935,7 +937,7 @@ class _HeroBannerLocal extends StatelessWidget {
                           ],
                         )),
                     const SizedBox(width: 4),
-                    Text('(2.5K ratings)',
+                    Text('(2.5K ${context.tr('txt_rating')})',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.82),
                           fontSize: 12.5,
@@ -1138,10 +1140,10 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
                       ],
                       if (policy['days'] != null)
                         _policyInfoRow(Icons.schedule_rounded,
-                            'Duration: ${policy['days']} days'),
+                            '${context.tr('txt_duration')}: ${policy['days']} days'),
                       if (policy['type'] != null)
                         _policyInfoRow(Icons.info_outline,
-                            'Type: ${policy['type']}'),
+                            '${context.tr('txt_type')}: ${policy['type']}'),
                       // Any remaining key-value pairs
                       ...policy.entries
                           .where((e) =>
@@ -1319,7 +1321,7 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(store.name.isEmpty ? 'Your Store' : store.name,
+            Text(store.name.isEmpty ? context.tr('your_store') : store.name,
                 style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -1348,7 +1350,7 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
       children: [
         Row(
           children: [
-            Text('Reviews',
+            Text(context.tr('txt_review'),
                 style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
@@ -1417,7 +1419,7 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Amazing store! Great quality products and fast delivery...',
+                      context.tr('amazing_store'),
                       style: TextStyle(
                           fontSize: 13,
                           color: _subTextColor,
@@ -1434,7 +1436,7 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
                                 size: 12,
                                 color: Colors.amber)),
                         const SizedBox(width: 6),
-                        Text('Customer · 2 days ago',
+                        Text('${context.tr('txt_customer')} · 2 ${context.tr('txt_days_ago')}',
                             style: TextStyle(
                                 fontSize: 11,
                                 color: _subTextColor)),
@@ -1474,16 +1476,16 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
     final items = <Map<String, dynamic>>[
       if (hasReturn)
         {
-          'label': 'Return policy',
+          'label': context.tr('faq_quick_return'),
           'icon': Icons.assignment_return_outlined,
-          'title': 'Return Policy',
+          'title': context.tr('faq_quick_return'),
           'data': widget.returnPolicy,
         },
       if (hasDelivery)
         {
-          'label': 'Delivery policy',
+          'label': context.tr('delivery_policy'),
           'icon': Icons.local_shipping_outlined,
-          'title': 'Delivery Policy',
+          'title': context.tr('delivery_policy'),
           'data': widget.deliveryPolicy,
         },
     ];
@@ -1492,7 +1494,7 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Policies',
+          Text(context.tr('txt_policies'),
               style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -1574,7 +1576,7 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Contact',
+          Text(context.tr('txt_contact'),
               style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -1616,7 +1618,7 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('About Store',
+        Text(context.tr('about_store'),
             style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
@@ -1642,7 +1644,7 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
                 Expanded(
                     child: GestureDetector(
                       onTap: () => _showFullAddressDialog(
-                        title: 'Address',
+                        title: context.tr('txt_address'),
                         content: store.address,
                       ),
                       child: _gridItem(
@@ -1656,7 +1658,7 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
                 Expanded(
                     child: GestureDetector(
                       onTap: () => _showFullAddressDialog(
-                        title: 'City',
+                        title: context.tr('txt_city'),
                         content: store.city,
                       ),
                       child: _gridItem(
@@ -1669,7 +1671,7 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
           const SizedBox(height: 12),
           GestureDetector(
             onTap: () => _showFullAddressDialog(
-              title: 'Working Hours',
+              title: context.tr('working_hours'),
               content: store.workingHours,
             ),
             child: _gridItem(store.workingHours, Icons.schedule_rounded),
@@ -1764,7 +1766,7 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
                           Clipboard.setData(ClipboardData(text: content));
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('$title copied to clipboard'),
+                              content: Text('$title ${context.tr('txt_cliped_to_clipboard')}'),
                               duration: const Duration(seconds: 2),
                             ),
                           );
@@ -1791,7 +1793,7 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'Copy',
+                                context.tr('txt_copy'),
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: _textColor,
@@ -1817,18 +1819,18 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Delivery',
+        Text(context.tr('delivery'),
             style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
                 color: _textColor)),
         const SizedBox(height: 10),
         if (store.deliveryBySeller == 1)
-          _deliveryRow('Home Delivery Available',
+          _deliveryRow(context.tr('txt_home_delivery_available'),
               Icons.local_shipping_outlined),
         if (store.selfPickup == 1)
           _deliveryRow(
-              'Self Pickup Available', Icons.storefront_outlined),
+              context.tr('self_pickup_available'), Icons.storefront_outlined),
       ],
     ),
   );
@@ -1880,7 +1882,7 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
     child: Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text('Visit Online Store',
+        Text(context.tr('txt_visit_store_online'),
             style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -2032,7 +2034,7 @@ class _ExpandableTextState extends State<_ExpandableText> {
           child: Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
-              _isExpanded ? 'See less' : 'See more',
+              _isExpanded ? context.tr('txt_see_less') : context.tr('txt_see_more'),
               style: TextStyle(
                   fontSize: 13,
                   color: Theme.of(context).primaryColor,

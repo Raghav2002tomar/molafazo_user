@@ -1,5 +1,6 @@
 // lib/screens/review/dynamic_review_list_screen.dart
 
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import 'model/static_review_model.dart';
@@ -113,7 +114,7 @@ class _DynamicReviewListScreenState extends State<DynamicReviewListScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Reviews',
+              context.tr('txt_review'),
               style: TextStyle(
                 color: cs.onSurface,
                 fontSize: 18,
@@ -164,7 +165,7 @@ class _DynamicReviewListScreenState extends State<DynamicReviewListScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '${filteredReviews.length} reviews',
+                    '${filteredReviews.length} ${context.tr('reviews')}',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -250,7 +251,7 @@ class _DynamicReviewListScreenState extends State<DynamicReviewListScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${widget.totalReviews} reviews',
+                      '${widget.totalReviews} ${context.tr('reviews')}',
                       style: TextStyle(
                         fontSize: 13,
                         color: cs.onSurfaceVariant,
@@ -337,7 +338,7 @@ class _DynamicReviewListScreenState extends State<DynamicReviewListScreen> {
           Container(
             margin: const EdgeInsets.only(right: 8),
             child: FilterChip(
-              label: const Text('All'),
+              label: Text(context.tr('txt_all')),
               selected:
                   selectedRating == null &&
                   !showWithImages &&
@@ -412,7 +413,7 @@ class _DynamicReviewListScreenState extends State<DynamicReviewListScreen> {
                     ? (isDark ? Colors.black : Colors.white)
                     : cs.onSurfaceVariant,
               ),
-              label: const Text('Photos'),
+              label: Text(context.tr('txt_photo')),
               selected: showWithImages,
               onSelected: (selected) {
                 setState(() {
@@ -447,7 +448,7 @@ class _DynamicReviewListScreenState extends State<DynamicReviewListScreen> {
                     ? (isDark ? Colors.black : Colors.white)
                     : cs.onSurfaceVariant,
               ),
-              label: const Text('Comments'),
+              label: Text(context.tr('txt_comments')),
               selected: showWithComments,
               onSelected: (selected) {
                 setState(() {
@@ -526,7 +527,7 @@ class _DynamicReviewListScreenState extends State<DynamicReviewListScreen> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Most Recent',
+                  context.tr('txt_most_recent'),
                   style: TextStyle(
                     color: sortBy == 'recent' ? cs.primary : cs.onSurface,
                     fontWeight: sortBy == 'recent'
@@ -550,7 +551,7 @@ class _DynamicReviewListScreenState extends State<DynamicReviewListScreen> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Highest Rating',
+                  context.tr('txt_highest_rating'),
                   style: TextStyle(
                     color: sortBy == 'rating_high' ? cs.primary : cs.onSurface,
                     fontWeight: sortBy == 'rating_high'
@@ -574,7 +575,7 @@ class _DynamicReviewListScreenState extends State<DynamicReviewListScreen> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Lowest Rating',
+                  context.tr('txt_lowest_rating'),
                   style: TextStyle(
                     color: sortBy == 'rating_low' ? cs.primary : cs.onSurface,
                     fontWeight: sortBy == 'rating_low'
@@ -593,11 +594,11 @@ class _DynamicReviewListScreenState extends State<DynamicReviewListScreen> {
   String _getSortLabel() {
     switch (sortBy) {
       case 'rating_high':
-        return 'Highest';
+        return context.tr('txt_highest');
       case 'rating_low':
-        return 'Lowest';
+        return context.tr('txt_lowest');
       default:
-        return 'Recent';
+        return context.tr('txt_recent');
     }
   }
 
@@ -628,15 +629,15 @@ class _DynamicReviewListScreenState extends State<DynamicReviewListScreen> {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const Padding(
+                 Padding(
                   padding: EdgeInsets.all(16),
                   child: Text(
-                    'Filter Reviews',
+                    context.tr('txt_filter_reviews'),
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
                 ListTile(
-                  title: const Text('With photos only'),
+                  title: Text(context.tr('txt_with_photos_only')),
                   leading: Container(
                     width: 24,
                     height: 24,
@@ -670,7 +671,7 @@ class _DynamicReviewListScreenState extends State<DynamicReviewListScreen> {
                   },
                 ),
                 ListTile(
-                  title: const Text('With comments only'),
+                  title: Text(context.tr('txt_with_comments_only')),
                   leading: Container(
                     width: 24,
                     height: 24,
@@ -724,7 +725,7 @@ class _DynamicReviewListScreenState extends State<DynamicReviewListScreen> {
                             ),
                           ),
                           child: Text(
-                            'Clear All',
+                            context.tr('txt_clear_all'),
                             style: TextStyle(color: cs.onSurface),
                           ),
                         ),
@@ -747,7 +748,7 @@ class _DynamicReviewListScreenState extends State<DynamicReviewListScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text('Apply'),
+                          child: Text(context.tr('txt_apply')),
                         ),
                       ),
                     ],
@@ -792,7 +793,7 @@ class _DynamicReviewListScreenState extends State<DynamicReviewListScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'No reviews match',
+            context.tr('txt_no_reviews_match'),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -801,7 +802,7 @@ class _DynamicReviewListScreenState extends State<DynamicReviewListScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Try adjusting your filters',
+            context.tr('txt_try_adjusting_filter'),
             style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
           ),
           const SizedBox(height: 20),
@@ -821,7 +822,7 @@ class _DynamicReviewListScreenState extends State<DynamicReviewListScreen> {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            child: const Text('Clear Filters'),
+            child: Text(context.tr('txt_clear_filters')),
           ),
         ],
       ),
@@ -950,7 +951,7 @@ class _DynamicReviewCard extends StatelessWidget {
           // In the image builder section of _DynamicReviewCard
           if (review.images.isNotEmpty) ...[
             Text(
-              'Review Photos',
+              context.tr('txt_review_photos'),
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -1003,7 +1004,7 @@ class _DynamicReviewCard extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Error',
+                                    context.tr('txt_error'),
                                     style: TextStyle(
                                       fontSize: 10,
                                       color: cs.onSurfaceVariant,
@@ -1085,7 +1086,7 @@ class _DynamicReviewCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Review Photos',
+                          context.tr('txt_review_photos'),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,

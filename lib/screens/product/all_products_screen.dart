@@ -1,3 +1,4 @@
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:ecom/screens/product/product_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
@@ -319,8 +320,8 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
                   MainAxisAlignment.spaceBetween,
                   children: [
 
-                    const Text(
-                      "Products",
+                     Text(
+                      context.tr('txt_products'),
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -328,7 +329,7 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
                     ),
 
                     Text(
-                      "${products.length} items",
+                      "${products.length} ${context.tr('txt_items')}",
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontSize: 14,
@@ -365,7 +366,7 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
                     const SizedBox(height: 16),
 
                     Text(
-                      "No products found",
+                      context.tr('txt_no_products_found'),
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey[600],

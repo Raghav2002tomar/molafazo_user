@@ -1,3 +1,4 @@
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/api_service.dart';
@@ -78,8 +79,8 @@ class _OrderListScreenState extends State<OrderListScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text(
-          "My Orders",
+        title: Text(
+          context.tr('txt_my_orders'),
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
         elevation: 0,
@@ -130,8 +131,8 @@ class _OrderListScreenState extends State<OrderListScreen> {
                   const SizedBox(height: 16),
                   Text(
                     _selectedFilter == 'All'
-                        ? "No orders found"
-                        : "No ${_selectedFilter.toLowerCase()} orders",
+                        ? context.tr('no_order_found')
+                        : "${context.tr('txt_no')} ${_selectedFilter.toLowerCase()} ${context.tr('txt_orders')}",
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w500,
@@ -141,8 +142,8 @@ class _OrderListScreenState extends State<OrderListScreen> {
                   const SizedBox(height: 8),
                   Text(
                     _selectedFilter == 'All'
-                        ? "Your order history will appear here"
-                        : "You don't have any ${_selectedFilter.toLowerCase()} orders",
+                        ? context.tr('txt_order_history')
+                        : "${context.tr('txt_you_dont_have')} ${_selectedFilter.toLowerCase()} ${context.tr('txt_orders')}",
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey.shade500,
@@ -202,7 +203,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    "Order #${order.orderId}",
+                                    "${context.tr('txt_order')} #${order.orderId}",
                                     style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
@@ -280,7 +281,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
                                     const SizedBox(height: 4),
                                     Text(
                                       productCount > 1
-                                          ? "+${productCount - 1} more item${productCount - 1 > 1 ? 's' : ''}"
+                                          ? "+${productCount - 1} ${context.tr('txt_more_item')}${productCount - 1 > 1 ? 's' : ''}"
                                           : "1 item",
                                       style: TextStyle(
                                         fontSize: 12,
@@ -347,8 +348,8 @@ class _OrderListScreenState extends State<OrderListScreen> {
                                   color: const Color(0xFF00B4AA).withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
-                                child: const Text(
-                                  "View Details",
+                                child: Text(
+                                  context.tr('txt_view_details'),
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,

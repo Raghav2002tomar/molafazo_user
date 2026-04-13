@@ -1,3 +1,4 @@
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
 
 import '../bottombar/model/product_model.dart';
@@ -32,7 +33,7 @@ class _FavoriteProductsScreenState extends State<FavoriteProductsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("My Favorites ❤️"),
+        title: Text(context.tr('fav_title')),
       ),
 
       body: FutureBuilder<List<ProductModel>>(
@@ -52,8 +53,8 @@ class _FavoriteProductsScreenState extends State<FavoriteProductsScreen> {
           final products = snapshot.data ?? [];
 
           if (products.isEmpty) {
-            return const Center(
-              child: Text("No favorite products yet"),
+            return Center(
+              child: Text(context.tr('fav_empty')),
             );
           }
 

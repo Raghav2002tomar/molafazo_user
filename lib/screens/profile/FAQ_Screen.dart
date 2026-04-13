@@ -1,5 +1,6 @@
 // lib/screens/faq/faq_screen.dart
 
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
 
 // Model classes (keep them in a separate file as shown below)
@@ -46,107 +47,107 @@ class _FAQScreenState extends State<FAQScreen> {
   void _loadFAQs() {
     _categories = [
       FAQCategory(
-        title: 'Orders & Shipping',
+        title: context.tr('txt_order_shipping'),
         items: [
           FAQItem(
-            question: 'How can I track my order?',
-            answer: 'You can track your order by going to "My Orders" section in your profile. Click on the specific order to see real-time tracking information. You will also receive email updates with tracking links once your order is shipped.',
+            question: context.tr('faq_track_order_q'),
+            answer: context.tr('faq_track_order_a'),
           ),
           FAQItem(
-            question: 'How long does delivery take?',
-            answer: 'Delivery typically takes 2-3 business days for metro cities and 3-5 business days for other locations. International shipping may take 7-14 business days. You can check estimated delivery time on the product page.',
+            question: context.tr('faq_delivery_time_q'),
+            answer: context.tr('faq_delivery_time_a'),
           ),
           FAQItem(
-            question: 'What are the shipping charges?',
-            answer: 'Shipping is free on orders above 499 c. For orders below 499 c. , a nominal shipping fee of 40 c. applies. Some products may have special shipping charges which will be clearly mentioned on the product page.',
+            question: context.tr('faq_shipping_charges_q'),
+            answer: context.tr('faq_shipping_charges_a'),
           ),
           FAQItem(
-            question: 'Can I change my delivery address after placing an order?',
-            answer: 'Address can be changed within 2 hours of placing the order, provided the order hasn\'t been processed yet. Go to "My Orders", select the order and click on "Change Address" option.',
+            question: context.tr('faq_change_address_q'),
+            answer: context.tr('faq_change_address_a'),
           ),
         ],
       ),
       FAQCategory(
-        title: 'Returns & Refunds',
+        title: context.tr('faq_returns'),
+        items: [
+            FAQItem(
+              question: context.tr('faq_return_policy_q'),
+              answer: context.tr('faq_return_policy_a'),
+            ),
+            FAQItem(
+              question: context.tr('faq_initiate_return_q'),
+              answer: context.tr('faq_initiate_return_a'),
+            ),
+            FAQItem(
+              question: context.tr('faq_refund_time_q'),
+              answer: context.tr('faq_refund_time_a'),
+            ),
+            FAQItem(
+              question: context.tr('faq_exchange_q'),
+              answer: context.tr('faq_exchange_a'),
+            ),
+          ],
+      ),
+      FAQCategory(
+        title: context.tr('faq_payments'),
         items: [
           FAQItem(
-            question: 'What is your return policy?',
-            answer: 'We offer 7-day easy returns on most products. Items must be unused, in original packaging with all tags attached. Some products like innerwear, personal care items are non-returnable due to hygiene reasons.',
+            question: context.tr('faq_payment_methods_q'),
+            answer: context.tr('faq_payment_methods_a'),
           ),
           FAQItem(
-            question: 'How do I initiate a return?',
-            answer: 'Go to "My Orders", select the item you want to return and click on "Return/Replace". Choose the reason for return and submit. You\'ll receive a confirmation email with return instructions.',
+            question: context.tr('faq_cod_q'),
+            answer: context.tr('faq_cod_a'),
           ),
           FAQItem(
-            question: 'When will I get my refund?',
-            answer: 'Refunds are processed within 5-7 business days after we receive and verify the returned item. The amount will be credited to your original payment method. UPI payments may reflect faster.',
+            question: context.tr('faq_card_safety_q'),
+            answer: context.tr('faq_card_safety_a'),
           ),
           FAQItem(
-            question: 'Do you offer exchange?',
-            answer: 'Yes, we offer exchange for size or color issues. You can request exchange through the "Return/Replace" option in your orders. If the exchange isn\'t possible, you can opt for a refund.',
+            question: context.tr('faq_payment_failed_q'),
+            answer: context.tr('faq_payment_failed_a'),
           ),
         ],
       ),
       FAQCategory(
-        title: 'Payments',
+        title: context.tr('faq_account'),
         items: [
           FAQItem(
-            question: 'What payment methods do you accept?',
-            answer: 'We accept all major payment methods including Credit/Debit Cards, UPI (Google Pay, PhonePe, Paytm), Net Banking, and Cash on Delivery. EMI options are also available on select banks.',
+            question: context.tr('faq_reset_password_q'),
+            answer: context.tr('faq_reset_password_a'),
           ),
           FAQItem(
-            question: 'Is Cash on Delivery available?',
-            answer: 'Yes, Cash on Delivery is available for orders up to 50,000 c. A small convenience fee of 25 c. may apply for COD orders. COD is subject to address verification.',
+            question: context.tr('faq_multiple_address_q'),
+            answer: context.tr('faq_multiple_address_a'),
           ),
           FAQItem(
-            question: 'Is it safe to save my card details?',
-            answer: 'Absolutely! We use industry-standard encryption and are PCI-DSS compliant. Your card details are stored securely and never shared with any third parties.',
+            question: context.tr('faq_delete_account_q'),
+            answer: context.tr('faq_delete_account_a'),
           ),
           FAQItem(
-            question: 'Why was my payment deducted but order not confirmed?',
-            answer: 'Sometimes due to technical glitches, payment may be deducted but order not confirmed. Don\'t worry, the amount will be auto-refunded within 3-4 business days. If not, contact our support.',
+            question: context.tr('faq_data_security_q'),
+            answer: context.tr('faq_data_security_a'),
           ),
         ],
       ),
       FAQCategory(
-        title: 'Account & Security',
+        title: context.tr('faq_products'),
         items: [
           FAQItem(
-            question: 'How do I reset my password?',
-            answer: 'Click on "Forgot Password" on the login page. Enter your registered email, you\'ll receive a password reset link. Follow the instructions to set a new password.',
+            question: context.tr('faq_authentic_products_q'),
+            answer: context.tr('faq_authentic_products_a'),
           ),
           FAQItem(
-            question: 'Can I have multiple addresses?',
-            answer: 'Yes, you can save multiple addresses in your account. Go to Profile > Shipping Address to add, edit or delete addresses. You can select your preferred address at checkout.',
+            question: context.tr('faq_out_of_stock_q'),
+            answer: context.tr('faq_out_of_stock_a'),
           ),
           FAQItem(
-            question: 'How do I delete my account?',
-            answer: 'To delete your account, please contact our customer support. Note that account deletion is permanent and all your data will be removed as per our privacy policy.',
+            question: context.tr('faq_warranty_q'),
+            answer: context.tr('faq_warranty_a'),
           ),
           FAQItem(
-            question: 'Is my personal information secure?',
-            answer: 'We take data security seriously. All personal information is encrypted and we never share your data with third parties without your consent. Read our Privacy Policy for more details.',
-          ),
-        ],
-      ),
-      FAQCategory(
-        title: 'Products & Availability',
-        items: [
-          FAQItem(
-            question: 'Are the products authentic?',
-            answer: 'Yes, all products sold on our platform are 100% authentic and sourced directly from brands or authorized distributors. We have strict quality checks in place.',
-          ),
-          FAQItem(
-            question: 'What if an item is out of stock?',
-            answer: 'You can enable "Notify Me" on out-of-stock products. We\'ll send you an email/SMS as soon as the item is back in stock.',
-          ),
-          FAQItem(
-            question: 'Do you provide warranty on products?',
-            answer: 'Warranty varies by product category. Electronics typically come with manufacturer warranty. Check the product description for specific warranty information.',
-          ),
-          FAQItem(
-            question: 'Can I pre-order upcoming products?',
-            answer: 'Yes, select products offer pre-order options. You can pay a small amount to pre-order and the remaining amount when the product launches.',
+            question: context.tr('faq_preorder_q'),
+            answer: context.tr('faq_preorder_a'),
           ),
         ],
       ),
@@ -211,7 +212,7 @@ class _FAQScreenState extends State<FAQScreen> {
           ),
         ),
         title: Text(
-          'FAQs',
+          context.tr('faq_title'),
           style: TextStyle(
             color: cs.onSurface,
             fontSize: 18,
@@ -253,7 +254,7 @@ class _FAQScreenState extends State<FAQScreen> {
                           });
                         },
                         decoration: InputDecoration(
-                          hintText: 'Search FAQs...',
+                          hintText: context.tr('faq_search_hint'),
                           hintStyle: TextStyle(
                             fontSize: 14,
                             color: cs.onSurfaceVariant,
@@ -347,7 +348,7 @@ class _FAQScreenState extends State<FAQScreen> {
                 ),
               ),
               subtitle: Text(
-                '${category.items.length} questions',
+                '${category.items.length} ${context.tr('faq_questions')}',
                 style: TextStyle(
                   fontSize: 13,
                   color: cs.onSurfaceVariant,
@@ -397,7 +398,7 @@ class _FAQScreenState extends State<FAQScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'No results found',
+                    context.tr('faq_no_results'),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -406,7 +407,7 @@ class _FAQScreenState extends State<FAQScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Try searching with different keywords',
+                    context.tr('faq_try_different'),
                     style: TextStyle(
                       fontSize: 14,
                       color: cs.onSurfaceVariant,

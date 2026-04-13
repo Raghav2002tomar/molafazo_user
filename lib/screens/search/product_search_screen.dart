@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -79,7 +80,7 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Search failed: $e")),
+        SnackBar(content: Text("${context.tr('txt_search_failed')}: $e")),
       );
     }
   }
@@ -119,7 +120,7 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Search Products'),
+        title: Text(context.tr('txt_search_product')),
         bottom: _selectedCity != null
             ? PreferredSize(
           preferredSize: const Size.fromHeight(50),
@@ -129,7 +130,7 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
             alignment: Alignment.centerLeft,
             child: Chip(
               label: Text(
-                "Searching in: $_selectedCity${_selectedCountry != null ? ', $_selectedCountry' : ''}",
+                "${context.tr('txt_searching_in')}: $_selectedCity${_selectedCountry != null ? ', $_selectedCountry' : ''}",
               ),
               onDeleted: _clearCityFilter,
               deleteIcon: const Icon(Icons.close, size: 18),
@@ -177,7 +178,7 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
                         Container(
                           margin: const EdgeInsets.only(right: 8),
                           child: Chip(
-                            label: const Text('Fast Delivery'),
+                            label: Text(context.tr('txt_fast_delivery')),
                             onDeleted: () {
                               setState(() => _selectedDelivery.remove('fast'));
                               _performSearch();
@@ -188,7 +189,7 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
                         Container(
                           margin: const EdgeInsets.only(right: 8),
                           child: Chip(
-                            label: const Text('Free Delivery'),
+                            label: Text(context.tr('txt_free_delivery')),
                             onDeleted: () {
                               setState(() => _selectedDelivery.remove('free'));
                               _performSearch();
@@ -287,11 +288,11 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
   String _getPriceLabel(String price) {
     switch (price) {
       case 'under_500':
-        return 'Under 500 c.';
+        return '${context.tr('txt_under')} 500 c.';
       case '500_1000':
         return '500 - 1000 c.';
       case 'above_1000':
-        return 'Above 1000 c.';
+        return '${context.tr('txt_above')} 1000 c.';
       default:
         return price;
     }
@@ -359,7 +360,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
           /// HEADER
           Row(
             children: [
-              Text("Filters",
+              Text(context.tr('txt_filters'),
                   style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
               const Spacer(),
               TextButton(
@@ -369,7 +370,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                     delivery.clear();
                   });
                 },
-                child: const Text("Clear",),
+                child: Text(context.tr('txt_clear')),
               ),
             ],
           ),
@@ -377,13 +378,13 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
           const SizedBox(height: 20),
 
           /// PRICE
-          Text("Price Range", style: tt.titleSmall),
+          Text(context.tr('txt_price_range'), style: tt.titleSmall),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             children: [
               _SelectableChip(
-                label: "Under 500 c.",
+                label: "${context.tr('txt_under')} 500 c.",
                 selected: price == "under_500",
                 onTap: () => setState(() => price = "under_500"),
               ),
@@ -393,7 +394,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                 onTap: () => setState(() => price = "500_1000"),
               ),
               _SelectableChip(
-                label: "Above 1000 c.",
+                label: "${context.tr('txt_above')} 1000 c.",
                 selected: price == "above_1000",
                 onTap: () => setState(() => price = "above_1000"),
               ),
@@ -403,13 +404,13 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
           const SizedBox(height: 16),
 
           /// DELIVERY
-          Text("Delivery", style: tt.titleSmall),
+          Text(context.tr('txt_delivery'), style: tt.titleSmall),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             children: [
               _SelectableChip(
-                label: "Fast Delivery",
+                label: context.tr('txt_fast_delivery'),
                 selected: delivery.contains("fast"),
                 onTap: () {
                   setState(() {
@@ -420,7 +421,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                 },
               ),
               _SelectableChip(
-                label: "Free Delivery",
+                label: context.tr('txt_free_delivery'),
                 selected: delivery.contains("free"),
                 onTap: () {
                   setState(() {
@@ -453,7 +454,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                   borderRadius: BorderRadius.circular(8), // Optional: rounded corners
                 ),
               ),
-              child: const Text("Apply Filters"),
+              child: Text(context.tr('txt_apply_filter')),
             ),
           ),
 
@@ -557,7 +558,7 @@ class _SearchField extends StatelessWidget {
                         fontWeight: FontWeight.w500,
                       ),
                       decoration: InputDecoration(
-                        hintText: "Search products or brands",
+                        hintText: context.tr('txt_search_products_brands'),
                         hintStyle: tt.bodyMedium?.copyWith(
                           color: cs.onSurfaceVariant.withOpacity(0.7),
                           fontWeight: FontWeight.w400,
@@ -585,7 +586,7 @@ class _SearchField extends StatelessWidget {
                         ScaleTransition(scale: anim, child: child),
                     child: controller.text.isNotEmpty
                         ? InkWell(
-                      key: const ValueKey('clear'),
+                      key:  ValueKey('clear'),
                       borderRadius: BorderRadius.circular(20),
                       onTap: () {
                         controller.clear();
@@ -651,12 +652,12 @@ class _InitialSearchView extends StatelessWidget {
           Icon(Icons.search, size: 80, color: cs.onSurface.withOpacity(0.3)),
           const SizedBox(height: 16),
           Text(
-            "Search for products",
+            context.tr('txt_search_for_products'),
             style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
           Text(
-            "Find products, brands and categories",
+            context.tr('find_products_brands'),
             style: tt.bodyMedium?.copyWith(
               color: cs.onSurface.withOpacity(0.6),
             ),
@@ -686,12 +687,12 @@ class _EmptySearchView extends StatelessWidget {
                 color: cs.onSurface.withOpacity(0.3)),
             const SizedBox(height: 16),
             Text(
-              "No products found",
+              context.tr('txt_no_product_found'),
               style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
             Text(
-              "Try different keywords or apply filters",
+              context.tr('try_diff_keyword'),
               textAlign: TextAlign.center,
               style: tt.bodyMedium?.copyWith(
                 color: cs.onSurface.withOpacity(0.6),
@@ -701,8 +702,8 @@ class _EmptySearchView extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onFilterTap,
               icon: const Icon(Icons.tune_rounded, color: Colors.white),
-              label: const Text(
-                "Apply Filters",
+              label: Text(
+                context.tr('txt_apply_filter'),
                 style: TextStyle(color: Colors.white),
               ),
               style: OutlinedButton.styleFrom(
@@ -823,8 +824,8 @@ class _ProductCardCompact extends StatelessWidget {
                       child: Container(
                         color: Colors.black.withOpacity(0.45),
                         alignment: Alignment.center,
-                        child: const Text(
-                          "OUT OF STOCK",
+                        child: Text(
+                          context.tr('txt_out_of_stock_caps'),
                           style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold),
@@ -876,3 +877,4 @@ class _ProductCardCompact extends StatelessWidget {
     );
   }
 }
+

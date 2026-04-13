@@ -170,6 +170,7 @@
 //   }
 // }
 
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/api_service.dart';
@@ -217,7 +218,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
       backgroundColor: cs.surface,
       appBar: AppBar(
         title: Text(
-          'Chats',
+          context.tr('txt_chat'),
           style: tt.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
             color: cs.onSurface,
@@ -259,7 +260,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
             ),
             const SizedBox(height: 20),
             Text(
-              "No Conversations Yet",
+              context.tr('txt_no_conversation'),
               style: tt.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: cs.onSurface,
@@ -267,7 +268,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              "Start a chat to see it here",
+              context.tr('txt_start_chat'),
               style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
             ),
           ],
@@ -483,7 +484,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
       } else if (difference.inMinutes > 0) {
         return '${difference.inMinutes}m ago';
       } else {
-        return 'Just now';
+        return context.tr('txt_just_now');
       }
     } catch (e) {
       return dateTimeString;

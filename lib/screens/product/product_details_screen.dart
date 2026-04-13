@@ -1,5 +1,6 @@
 
 
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:ecom/screens/auth/LoginScreen.dart';
 import 'package:ecom/screens/cart/cart_screen.dart';
 import 'package:ecom/screens/product/store_detail_screen.dart';
@@ -115,7 +116,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         if (mounted) {
           setState(() {
             _isLoading = false;
-            _errorMessage = 'Failed to load product data';
+            _errorMessage = context.tr('txt_failed_to_load_product');
           });
         }
         return;
@@ -202,9 +203,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
       // Create stock display text for the selected combination
       if (_selectedStock > 0) {
-        _selectedCombinationStockDisplay = 'In Stock (${_selectedStock})';
+        _selectedCombinationStockDisplay = '${context.tr('txt_in_stock')} (${_selectedStock})';
       } else {
-        _selectedCombinationStockDisplay = 'Out of Stock';
+        _selectedCombinationStockDisplay = context.tr('txt_out_of_stock');
       }
 
       print('Selected combination: ${matchingCombo.id}');
@@ -215,18 +216,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   String _getDeliveryPriceText(ProductDetail product) {
     if (product.deliveryPrice == null || product.deliveryPrice.isEmpty) {
-      return 'Free';
+      return context.tr('txt_free');
     }
     final price = double.tryParse(product.deliveryPrice) ?? 0;
     if (price == 0) {
-      return 'Free';
+      return context.tr('txt_free');
     }
     return '${price.toInt()} c.';
   }
 
   String _getDeliveryTimeText(ProductDetail product) {
     if (product.deliveryTime == null || product.deliveryTime.isEmpty) {
-      return 'Standard delivery';
+      return context.tr('txt_standard_delivery');
     }
     return product.deliveryTime;
   }
@@ -303,7 +304,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       } else if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = 'Failed to load seller product';
+          _errorMessage = context.tr('failed_to_load_seller');
         });
       }
     } catch (e) {
@@ -397,7 +398,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Other Sellers',
+            context.tr('other_sellers'),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -594,7 +595,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ),
                             const SizedBox(width: 2),
                             Text(
-                              'In Stock',
+                              context.tr('txt_in_stock'),
                               style: TextStyle(
                                 fontSize: 9,
                                 color: Colors.green.shade700,
@@ -630,7 +631,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Free Delivery',
+                      context.tr('txt_free_delivery'),
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.grey.shade600,
@@ -647,7 +648,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      '✓ Selected Seller',
+                      '✓ ${context.tr('txt_selected_seller')}',
                       style: TextStyle(
                         fontSize: 10,
                         color: cs.primary,
@@ -675,7 +676,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               // const SizedBox(height: 12),
               if (!isSelected)
                 AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
+                  duration:  Duration(milliseconds: 200),
                   child: ElevatedButton(
                     onPressed: () => _selectSeller(seller),
                     style: ElevatedButton.styleFrom(
@@ -690,10 +691,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: const [
+                      children: [
                         Icon(Icons.swap_horiz, size: 14),
                         SizedBox(width: 4),
-                        Text('Select', style: TextStyle(fontSize: 12)),
+                        Text(context.tr('txt_select'), style: TextStyle(fontSize: 12)),
                       ],
                     ),
                   ),
@@ -711,11 +712,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: const [
+                    children: [
                       Icon(Icons.check_circle, size: 14, color: Colors.green),
                       SizedBox(width: 4),
                       Text(
-                        'Selected',
+                        context.tr('txt_selected'),
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.green,
@@ -768,7 +769,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      result['message'] ?? '${product.name} added to cart',
+                      result['message'] ?? '${product.name} ${context.tr('txt_added_to_cart')}',
                     ),
                   ),
                 ],
@@ -779,7 +780,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
               action: SnackBarAction(
-                label: 'VIEW CART',
+                label: context.tr('txt_view_cart'),
                 textColor: Colors.white,
                 onPressed: () {
                   Navigator.push(
@@ -797,7 +798,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         } else if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(result['message'] ?? 'Failed to add to cart'),
+              content: Text(result['message'] ?? context.tr('txt_failed_to_add_cart')),
               backgroundColor: Colors.red,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -815,7 +816,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text('${context.tr('txt_error')}: ${e.toString()}'),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -841,14 +842,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             const Text('Login Required'),
           ],
         ),
-        content: const Text(
-          'Please login to add items to your cart and continue shopping.',
+        content:  Text(
+          context.tr('please_login_to_add'),
           style: TextStyle(height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(color: cs.onSurfaceVariant)),
+            child: Text(context.tr('txt_cancel'), style: TextStyle(color: cs.onSurfaceVariant)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -865,7 +866,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text('Login'),
+            child: Text(context.tr('txt_login')),
           ),
         ],
       ),
@@ -884,7 +885,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     if (_errorMessage != null || _cachedProductData == null) {
       return _buildErrorState(
         context,
-        _errorMessage ?? 'No product data available',
+        _errorMessage ?? context.tr('no_products_available'),
       );
     }
 
@@ -988,8 +989,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                 if (token == null || token.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Please login first"),
+                     SnackBar(
+                      content: Text(context.tr('txt_login_first')),
                     ),
                   );
                   return;
@@ -1013,8 +1014,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       SnackBar(
                         content: Text(
                           isFav
-                              ? "Added to favourites ❤️"
-                              : "Removed from favourites",
+                              ? context.tr('added_to_fav')
+                              : context.tr('removed_from_fav'),
                         ),
                         duration: const Duration(seconds: 1),
                       ),
@@ -1022,22 +1023,22 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   } else {
                     if (res["message"] == "Unauthorized user") {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Please login first"),
+                         SnackBar(
+                          content: Text(context.tr('txt_login_first')),
                         ),
                       );
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(res["message"] ?? "Something went wrong"),
+                          content: Text(res["message"] ?? context.tr('txt_something_went_wrong')),
                         ),
                       );
                     }
                   }
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Server error"),
+                     SnackBar(
+                      content: Text(context.tr('server_error')),
                     ),
                   );
                 }
@@ -1212,8 +1213,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           } else if (_selectedStock == 0 && _cachedProductData!.data.combinations.isNotEmpty) {
                             // Show message if out of stock
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Selected combination is out of stock'),
+                               SnackBar(
+                                content: Text(context.tr('selected_combo_out_stock')),
                                 duration: Duration(seconds: 2),
                                 backgroundColor: Colors.orange,
                               ),
@@ -1222,7 +1223,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             // Show message if max stock reached
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Only $_selectedStock items available in stock'),
+                                content: Text('${context.tr('txt_only')} $_selectedStock ${context.tr('txt_items_available')}'),
                                 duration: Duration(seconds: 2),
                                 backgroundColor: Colors.orange,
                               ),
@@ -1242,16 +1243,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     children: [
                       Column(crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Article Number"),
+                          Text(context.tr('txt_article_number')),
                           Tooltip(
-                            message: "Tap or long press to copy",
+                            message: context.tr('txt_tap_press'),
                             child: GestureDetector(
                               onTap: () {
                                 final text = product.articlenumber?.toString() ?? '';
                                 Clipboard.setData(ClipboardData(text: text));
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text("Copied"),
+                                   SnackBar(
+                                    content: Text(context.tr('txt_copied')),
                                     duration: Duration(seconds: 1),
                                   ),
                                 );
@@ -1326,7 +1327,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Delivery Available',
+                                  context.tr('txt_delivery_available'),
                                   style: tt.bodyMedium?.copyWith(
                                     fontWeight: FontWeight.w600,
                                     color: cs.onSurface,
@@ -1355,7 +1356,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   const SizedBox(height: 24),
                   // Description
                   Text(
-                    'Description',
+                    context.tr('txt_description'),
                     style: tt.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: cs.onSurface,
@@ -1477,7 +1478,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    "Store",
+                                    context.tr('txt_store'),
                                     style: tt.bodySmall?.copyWith(
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -1516,14 +1517,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Related Products',
+                          context.tr('txt_related_products'),
                           style: tt.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: cs.onSurface,
                           ),
                         ),
                         Text(
-                          '${relatedProducts.length} items',
+                          '${relatedProducts.length} ${context.tr('txt_items')}',
                           style: tt.bodySmall?.copyWith(
                             color: cs.onSurfaceVariant,
                           ),
@@ -1600,17 +1601,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     // If combinations exist and we have selected stock, use that
     if (_cachedProductData!.data.combinations.isNotEmpty) {
       if (_selectedStock > 0) {
-        return 'In Stock (${_selectedStock})';
+        return '${context.tr('txt_in_stock')} (${_selectedStock})';
       } else {
-        return 'Out of Stock';
+        return context.tr('txt_out_of_stock');
       }
     }
 
     // Fallback to product stock
     if (product.availableQuantity > 0) {
-      return 'In Stock (${product.availableQuantity})';
+      return '${context.tr('txt_in_stock')} (${product.availableQuantity})';
     } else {
-      return 'Out of Stock';
+      return context.tr('txt_out_of_stock');
     }
   }
   Widget _buildBottomBar(
@@ -1652,7 +1653,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Quantity adjusted to available stock ($_selectedStock)'),
+              content: Text('${context.tr('txt_quantity_adjusted')} ($_selectedStock)'),
               duration: const Duration(seconds: 2),
               backgroundColor: Colors.orange,
             ),
@@ -1683,7 +1684,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Total Price',
+                  context.tr('total_price'),
                   style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
                 ),
                 const SizedBox(height: 2),
@@ -1713,7 +1714,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      'Available: $_selectedStock units',
+                      '${context.tr('txt_available')}: $_selectedStock ${context.tr('txt_units')}',
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.green.shade600,
@@ -1746,10 +1747,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     color: isDark ? Colors.black : Colors.white,
                   ),
                   label: Text(
-                    _isAddingToCart ? 'Adding...' :
+                    _isAddingToCart ? context.tr('txt_adding') :
                     (!canAddToCart && _selectedStock == 0 && _cachedProductData!.data.combinations.isNotEmpty)
-                        ? 'Out of Stock'
-                        : 'Add to Cart',
+                        ? context.tr('txt_out_of_stock')
+                        : context.tr('txt_add_to_cart'),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -1788,7 +1789,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             CircularProgressIndicator(color: cs.primary),
             const SizedBox(height: 16),
             Text(
-              'Loading product details...',
+              context.tr('txt_loading_product'),
               style: TextStyle(color: cs.onSurfaceVariant),
             ),
           ],
@@ -1822,7 +1823,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Reviews',
+              context.tr('txt_review'),
               style: tt.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: cs.onSurface,
@@ -1846,7 +1847,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     // ),
                     const SizedBox(height: 8),
                     Text(
-                      'No reviews yet',
+                      context.tr('txt_no_reviews_yet'),
                       style: tt.bodyMedium?.copyWith(
                         color: cs.onSurfaceVariant,
                         fontWeight: FontWeight.w600,
@@ -1854,7 +1855,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Be the first to review this product',
+                      context.tr('be_first_to_review'),
                       style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
                     ),
                   ],
@@ -1877,7 +1878,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             Row(
               children: [
                 Text(
-                  'Reviews',
+                  context.tr('txt_review'),
                   style: tt.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: cs.onSurface,
@@ -1933,7 +1934,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ).then((_) => _fetchReviews());
               },
               child: Text(
-                'See All',
+                context.tr('txt_see_all'),
                 style: TextStyle(
                   color: cs.primary,
                   fontWeight: FontWeight.w600,
@@ -1967,7 +1968,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ).then((_) => _fetchReviews());
                 },
                 child: Text(
-                  'View all $_totalReviews reviews',
+                  '${context.tr('txt_view_all')} $_totalReviews ${context.tr('reviews')}',
                   style: TextStyle(
                     color: cs.primary,
                     fontWeight: FontWeight.w600,

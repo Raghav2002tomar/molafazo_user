@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -625,7 +626,7 @@ class _ChatDetailScreenState
                                 color: cs.onSurface,
                               ),
                               decoration: InputDecoration(
-                                hintText: "Type a message",
+                                hintText: context.tr('txt_type_a_message'),
                                 hintStyle: TextStyle(
                                   color: cs.onSurfaceVariant,
                                   fontSize: 15,
