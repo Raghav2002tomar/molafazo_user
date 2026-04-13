@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart' show DeviceInfoPlugin;
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -102,7 +103,7 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _requestOtp() async {
     if (_rawPhoneNumber.isEmpty || _rawPhoneNumber.length < 8) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a valid phone number')),
+        SnackBar(content: Text(context.tr('hint_enter_valid_phone_number'))),
       );
       return;
     }
@@ -192,7 +193,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      "OTP: $otp",
+                      "${context.tr('txt_otp')}: $otp",
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w800,
@@ -222,7 +223,7 @@ class _AuthScreenState extends State<AuthScreen> {
     if (code.length != 6) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Enter 6-digit OTP')));
+      ).showSnackBar(SnackBar(content: Text(context.tr('txt_hint_enter_otp'))));
       return;
     }
 
@@ -297,7 +298,7 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Verify OTP',
+                context.tr('verify_otp'),
                 style: tt.titleLarge?.copyWith(
                   fontWeight: FontWeight.w800,
                   color: cs.onSurface,
@@ -305,7 +306,7 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Code sent to ${_phoneController.text}',
+                '${context.tr('txt_code_sent_to')} ${_phoneController.text}',
                 style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
               ),
               const SizedBox(height: 16),
@@ -382,8 +383,8 @@ class _AuthScreenState extends State<AuthScreen> {
                   const SizedBox(width: 6),
                   Text(
                     _secondsLeft > 0
-                        ? 'Resend in 0:${_secondsLeft.toString().padLeft(2, '0')}'
-                        : 'Didn’t get the code?',
+                        ? '${context.tr('txt_resend_to')}:${_secondsLeft.toString().padLeft(2, '0')}'
+                        : context.tr('txt_did_no_get'),
                     style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
                   ),
                   const Spacer(),
@@ -395,7 +396,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           }
                         : null,
                     child: Text(
-                      'Resend',
+                      context.tr('txt_resend'),
                       style: tt.labelLarge?.copyWith(
                         color: _secondsLeft == 0
                             ? (isDark ? Colors.white : Colors.black)
@@ -431,7 +432,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                         )
                       : Text(
-                          'Verify & Continue',
+                          context.tr('txt_verify_continue'),
                           style: tt.titleSmall?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: isDark ? Colors.black : Colors.white,
@@ -464,7 +465,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
               // Welcome Header
               Text(
-                "Welcome Back 👋",
+                context.tr('txt_welcome_back'),
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
@@ -473,7 +474,7 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                "Login with your phone number to continue",
+                context.tr('txt_login_with_number'),
                 style: TextStyle(
                   fontSize: 16,
                   color: cs.onBackground.withOpacity(0.6),
@@ -501,7 +502,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Phone Number",
+                      context.tr('txt_phone_number'),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -546,7 +547,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       showDropdownIcon: false,
 
                       decoration: InputDecoration(
-                        labelText: 'Phone number',
+                        labelText: context.tr('txt_phone_number'),
                         hintText: '900 12 34 56',
                         filled: true,
                         fillColor: cs.surfaceContainerLow,
@@ -558,11 +559,11 @@ class _AuthScreenState extends State<AuthScreen> {
                       /// ✅ VALIDATION
                       validator: (phone) {
                         if (phone == null || phone.number.isEmpty) {
-                          return 'Phone number is required';
+                          return context.tr('hint_phone_number_required');
                         }
 
                         if (phone.number.length != 10) {
-                          return 'Enter exactly 10 digits';
+                          return context.tr('txt_enter_10_digits');
                         }
 
                         return null;
@@ -598,8 +599,8 @@ class _AuthScreenState extends State<AuthScreen> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text(
-                                "Get OTP",
+                            : Text(
+                                context.tr('txt_get_otp'),
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
@@ -617,7 +618,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Text(
-                            "or",
+                            context.tr('txt_or'),
                             style: TextStyle(color: cs.onSurfaceVariant),
                           ),
                         ),
@@ -649,7 +650,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                         ),
                         child: Text(
-                          "Skip for now →",
+                          context.tr('txt_skip_for_now'),
                           style: TextStyle(
                             color: cs.onSurface.withOpacity(0.8),
                             fontWeight: FontWeight.w600,

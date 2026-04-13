@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
@@ -51,7 +52,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     // Basic client validation; server should validate too
     if ((_fullPhone ?? '').isEmpty || _phoneController.text.trim().length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Enter a valid phone number', style: TextStyle(color: cs.onInverseSurface)), backgroundColor: cs.inverseSurface),
+        SnackBar(content: Text(context.tr('hint_enter_valid_phone_number'), style: TextStyle(color: cs.onInverseSurface)), backgroundColor: cs.inverseSurface),
       );
       return;
     }
@@ -68,7 +69,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final code = _otpController.text.trim();
     if (code.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Enter the 6‑digit code', style: TextStyle(color: cs.onInverseSurface)), backgroundColor: cs.inverseSurface),
+        SnackBar(content: Text(context.tr('txt_hint_enter_otp'), style: TextStyle(color: cs.onInverseSurface)), backgroundColor: cs.inverseSurface),
       );
       return;
     }
@@ -108,9 +109,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 child: Container(width: 38, height: 4, decoration: BoxDecoration(color: cs.outlineVariant, borderRadius: BorderRadius.circular(999))),
               ),
               const SizedBox(height: 16),
-              Text('Verify OTP', style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w800, color: cs.onSurface)),
+              Text(context.tr('verify_otp'), style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w800, color: cs.onSurface)),
               const SizedBox(height: 6),
-              Text('Code sent to ${_fullPhone ?? ''}', style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+              Text('${context.tr('txt_code_sent_to')} ${_fullPhone ?? ''}', style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
               const SizedBox(height: 16),
 
               TextField(
@@ -138,7 +139,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   Icon(Icons.timer_outlined, size: 18, color: cs.onSurfaceVariant),
                   const SizedBox(width: 6),
                   Text(
-                    _secondsLeft > 0 ? 'Resend in 0:${_secondsLeft.toString().padLeft(2, '0')}' : 'Didn’t get the code?',
+                    _secondsLeft > 0 ? '${context.tr('txt_resend_to')}:${_secondsLeft.toString().padLeft(2, '0')}' : context.tr('txt_did_no_get'),
                     style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
                   ),
                   const Spacer(),
@@ -150,7 +151,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     }
                         : null,
                     child: Text(
-                      'Resend',
+                      context.tr('txt_resend'),
                       style: tt.labelLarge?.copyWith(
                         color: _secondsLeft == 0 ? (isDark ? Colors.white : Colors.black) : cs.onSurfaceVariant,
                         fontWeight: FontWeight.w700,
@@ -174,7 +175,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   child: _isLoading
                       ? SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: isDark ? Colors.black : Colors.white))
-                      : Text('Verify & Continue', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: isDark ? Colors.black : Colors.white)),
+                      : Text(context.tr('txt_verify_continue'), style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: isDark ? Colors.black : Colors.white)),
                 ),
               ),
               const SizedBox(height: 8),
@@ -222,7 +223,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text('Sign up', style: tt.titleLarge?.copyWith(color: cs.onSurface)),
+        title: Text(context.tr('txt_signup'), style: tt.titleLarge?.copyWith(color: cs.onSurface)),
         leading: Padding(
           padding: const EdgeInsets.all(6.0),
           child: _CircleAction(
@@ -242,9 +243,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Create Account ✨", style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: cs.onBackground)),
+                Text(context.tr('txt_create_account'), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: cs.onBackground)),
                 const SizedBox(height: 8),
-                Text("Verify number, then add name & email", style: TextStyle(fontSize: 16, color: cs.onBackground.withOpacity(0.6))),
+                Text(context.tr('txt_verify_add_number'), style: TextStyle(fontSize: 16, color: cs.onBackground.withOpacity(0.6))),
                 const SizedBox(height: 24),
 
                 // Card
@@ -260,14 +261,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Phone + country picker
-                      Text("Phone Number", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface.withOpacity(0.7))),
+                      Text(context.tr('txt_phone_number'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface.withOpacity(0.7))),
                       const SizedBox(height: 8),
                       IntlPhoneField(
                         controller: _phoneController,
                         initialCountryCode: 'RU', // default Russia
                         disableLengthCheck: true,
-                        decoration: deco("Phone number").copyWith(
-                          helperText: _otpVerified ? 'Verified' : 'You will receive a 6‑digit code',
+                        decoration: deco(context.tr('txt_phone_number')).copyWith(
+                          helperText: _otpVerified ? context.tr('txt_verified') : context.tr('txt_you_will_receive_code'),
                           helperStyle: TextStyle(color: _otpVerified ? cs.primary : cs.onSurfaceVariant),
                         ),
                         flagsButtonPadding: const EdgeInsets.symmetric(horizontal: 8),
@@ -294,41 +295,41 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             ),
                             child: _isLoading
                                 ? SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: isDark ? Colors.black : Colors.white))
-                                : const Text('Get OTP', style: TextStyle(fontWeight: FontWeight.w700)),
+                                : Text(context.tr('txt_get_otp'), style: TextStyle(fontWeight: FontWeight.w700)),
                           ),
                         ),
 
                       if (_otpVerified) ...[
                         const SizedBox(height: 16),
                         // Name
-                        Text("Full Name", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface.withOpacity(0.7))),
+                        Text(context.tr('txt_full_name'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface.withOpacity(0.7))),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _nameController,
                           textInputAction: TextInputAction.next,
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: cs.onSurface),
-                          decoration: deco("Enter your full name").copyWith(
+                          decoration: deco(context.tr('txt_enter_full_name')).copyWith(
                             prefixIcon: _ChipIcon(icon: Icons.person, isDark: isDark),
                           ),
-                          validator: (v) => (v == null || v.trim().isEmpty) ? "Enter your name" : null,
+                          validator: (v) => (v == null || v.trim().isEmpty) ? context.tr('txt_enter_name') : null,
                         ),
 
                         const SizedBox(height: 16),
                         // Email
-                        Text("Email Address", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface.withOpacity(0.7))),
+                        Text(context.tr('txt_email_address'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface.withOpacity(0.7))),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
                           textInputAction: TextInputAction.done,
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: cs.onSurface),
-                          decoration: deco("Enter your email").copyWith(
+                          decoration: deco(context.tr('txt_enter_email_address')).copyWith(
                             prefixIcon: _ChipIcon(icon: Icons.email, isDark: isDark),
                           ),
                           validator: (v) {
-                            if (v == null || v.trim().isEmpty) return "Enter your email";
+                            if (v == null || v.trim().isEmpty) return context.tr('txt_enter_email_address');
                             final email = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-                            return email.hasMatch(v.trim()) ? null : "Enter a valid email";
+                            return email.hasMatch(v.trim()) ? null : context.tr('txt_enter_valid_address');
                           }, // basic email validation [16]
                         ),
 
@@ -346,7 +347,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             ),
                             child: _isLoading
                                 ? SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: isDark ? Colors.black : Colors.white))
-                                : const Text("Create Account", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                                : Text(context.tr('txt_created_account'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                           ),
                         ),
                       ],
@@ -358,11 +359,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text("Already have an account? ", style: TextStyle(color: cs.onBackground.withOpacity(0.7), fontSize: 16)),
+                    Text(context.tr('txt_already_have_account'), style: TextStyle(color: cs.onBackground.withOpacity(0.7), fontSize: 16)),
                     TextButton(
                       onPressed: () => Navigator.pop(context),
                       style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                      child: Text("Login", style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.w700)),
+                      child: Text(context.tr('txt_login'), style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.w700)),
                     ),
                   ],
                 ),

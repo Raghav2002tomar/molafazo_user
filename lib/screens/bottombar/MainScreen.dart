@@ -1,5 +1,6 @@
 // lib/theme/app_theme.dart remains the same, you already provide light/dark schemes.
 
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:ecom/screens/product/product_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -59,7 +60,7 @@ class _SimpleBottomNavScreenState extends State<SimpleBottomNavScreen> {
                   index: 0,
                   currentIndex: _currentIndex,
                   icon: Icons.home_rounded,
-                  label: 'Home',
+                  label: context.tr('title_home'),
                   onTap: _onTap,
                 ),
                 Consumer<CartProvider>(
@@ -68,7 +69,7 @@ class _SimpleBottomNavScreenState extends State<SimpleBottomNavScreen> {
                       index: 1,
                       currentIndex: _currentIndex,
                       icon: Icons.shopping_cart_outlined,
-                      label: 'Cart',
+                      label: context.tr('title_cart'),
                       onTap: _onTap,
                       cartCount: cart.cartCount,
                     );
@@ -78,14 +79,14 @@ class _SimpleBottomNavScreenState extends State<SimpleBottomNavScreen> {
                   index: 2,
                   currentIndex: _currentIndex,
                   icon: Icons.chat_outlined,
-                  label: 'Chat',
+                  label: context.tr('title_chat'),
                   onTap: _onTap,
                 ),
                 _NavItem(
                   index: 3,
                   currentIndex: _currentIndex,
                   icon: Icons.person_outline_rounded,
-                  label: 'Profile',
+                  label: context.tr('title_profile'),
                   onTap: _onTap,
                 ),
               ],

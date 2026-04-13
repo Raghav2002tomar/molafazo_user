@@ -1,3 +1,4 @@
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:ecom/screens/auth/LoginScreen.dart';
 import 'package:ecom/screens/cart/checkout_screen.dart';
 import 'package:flutter/material.dart';
@@ -55,7 +56,7 @@ class _CartScreenState extends State<CartScreen> {
       } else {
         // This handles the "Cart is empty" case
         _cartData = null;
-        _errorMessage = result['message'] ?? 'Cart is empty';
+        _errorMessage = result['message'] ?? context.tr('txt_cart_empty');
       }
     });
   }
@@ -81,7 +82,7 @@ class _CartScreenState extends State<CartScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result['message'] ?? 'Failed to update quantity'),
+            content: Text(result['message'] ?? context.tr('txt_failed_to_update')),
             backgroundColor: Colors.red,
           ),
         );
@@ -101,7 +102,7 @@ class _CartScreenState extends State<CartScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Item removed from cart'),
+            content: Text(context.tr('txt_item_removed_cart')),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
           ),
@@ -111,7 +112,7 @@ class _CartScreenState extends State<CartScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result['message'] ?? 'Failed to remove item'),
+            content: Text(result['message'] ?? context.tr('txt_failed_to_remove')),
             backgroundColor: Colors.red,
           ),
         );
@@ -133,7 +134,7 @@ class _CartScreenState extends State<CartScreen> {
         elevation: 0,
         automaticallyImplyLeading: false,
         title: Text(
-          'My Cart',
+          context.tr('txt_my_cart'),
           style: TextStyle(
             color: cs.onSurface,
             fontWeight: FontWeight.bold,
@@ -278,7 +279,7 @@ class _CartScreenState extends State<CartScreen> {
 
               // Empty cart message
               Text(
-                'Your cart is empty',
+                context.tr('txt_your_cart_is_empty'),
                 style: tt.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: cs.onSurface,
@@ -289,7 +290,7 @@ class _CartScreenState extends State<CartScreen> {
               const SizedBox(height: 12),
 
               Text(
-                'Looks like you haven\'t added anything to your cart yet',
+                context.tr('txt_cart_description'),
                 textAlign: TextAlign.center,
                 style: tt.bodyMedium?.copyWith(
                   color: cs.onSurfaceVariant,
@@ -390,7 +391,7 @@ class _CartScreenState extends State<CartScreen> {
             Icon(Icons.error_outline, size: 80, color: cs.error),
             const SizedBox(height: 16),
             Text(
-              'Error Loading Cart',
+              context.tr('txt_error_loading_cart'),
               style: tt.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: cs.onSurface,
@@ -398,7 +399,7 @@ class _CartScreenState extends State<CartScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              _errorMessage ?? 'Something went wrong',
+              _errorMessage ?? context.tr('txt_something_went_wrong'),
               textAlign: TextAlign.center,
               style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
             ),
@@ -406,7 +407,7 @@ class _CartScreenState extends State<CartScreen> {
             ElevatedButton.icon(
               onPressed: _loadCart,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(context.tr('txt_retry')),
               style: ElevatedButton.styleFrom(
                 backgroundColor: cs.primary,
                 foregroundColor: cs.onPrimary,
@@ -502,7 +503,7 @@ class _CartScreenState extends State<CartScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Total (${cartData.items.length} item${cartData.items.length > 1 ? 's' : ''}):',
+                      '${context.tr('txt_total')} (${cartData.items.length} ${context.tr('txt_item')}${cartData.items.length > 1 ? 's' : ''}):',
                       style: TextStyle(
                         fontSize: 16,
                         color: cs.onSurfaceVariant,
@@ -548,8 +549,8 @@ class _CartScreenState extends State<CartScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text(
-                          'Proceed to Checkout',
+                         Text(
+                          context.tr('txt_proceed_to_checkout'),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -586,14 +587,14 @@ class _CartScreenState extends State<CartScreen> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Remove Item'),
-        content: const Text(
-          'Are you sure you want to remove this item from your cart?',
+        title: Text(context.tr('txt_remove_item')),
+        content: Text(
+          context.tr('txt_sure_remove'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: Text('Cancel', style: TextStyle(color: cs.onSurfaceVariant)),
+            child: Text(context.tr('txt_cancel'), style: TextStyle(color: cs.onSurfaceVariant)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -605,7 +606,7 @@ class _CartScreenState extends State<CartScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Remove'),
+            child: Text(context.tr('txt_remove')),
           ),
         ],
       ),
@@ -765,7 +766,7 @@ class _CartItemCard extends StatelessWidget {
                           ),
                         // Subtotal
                         Text(
-                          'Subtotal: ${(itemPrice * cartItem.quantity).toInt()} c.',
+                          '${context.tr('txt_subtotal')}: ${(itemPrice * cartItem.quantity).toInt()} c.',
                           style: TextStyle(
                             fontSize: 11,
                             color: cs.onSurfaceVariant,

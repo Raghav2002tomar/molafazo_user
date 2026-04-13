@@ -1707,6 +1707,7 @@
 //   }
 // }
 
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -1795,7 +1796,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           '${store.name}\n'
               '${store.address}\n'
               '${store.city}, ${store.country}\n'
-              'Phone: ${store.mobile}';
+              '${context.tr('txt_phone')}: ${store.mobile}';
         });
       }
     }
@@ -1812,7 +1813,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (vendorBanks.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('No bank accounts available for payment'),
+          content: Text(context.tr('txt_no_bank_accounts')),
           backgroundColor: Colors.black,
           behavior: SnackBarBehavior.floating,
         ),
@@ -1839,7 +1840,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Bank changed to: ${selectedBank['bank_name']}'),
+          content: Text('${context.tr('txt_bank_changed_to')}: ${selectedBank['bank_name']}'),
           backgroundColor: Colors.black,
           behavior: SnackBarBehavior.floating,
         ),
@@ -1888,7 +1889,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
         ),
         title: Text(
-          "Checkout",
+          context.tr('txt_checkout'),
           style: tt.titleMedium?.copyWith(
             color: isDark ? Colors.white : Colors.black,
             fontWeight: FontWeight.bold,
@@ -1957,7 +1958,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey),
           const SizedBox(height: 16),
           Text(
-            'Your cart is empty',
+            context.tr('txt_your_cart_empty'),
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -1966,7 +1967,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Add items to proceed to checkout',
+            context.tr('txt_add_items_to_proceed'),
             style: TextStyle(
               color: Colors.grey,
             ),
@@ -2011,7 +2012,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               Icon(Icons.store_outlined, color: Colors.black, size: 24),
               const SizedBox(width: 8),
               Text(
-                'Store Pickup Location',
+                context.tr('txt_store_pickup'),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -2032,7 +2033,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  store?.name ?? 'Store Name',
+                  store?.name ?? context.tr('txt_store_name'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -2041,7 +2042,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  store?.address ?? 'Address not available',
+                  store?.address ?? context.tr('txt_address_not_available'),
                   style: TextStyle(
                     color: Colors.grey,
                     height: 1.4,
@@ -2080,7 +2081,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Please collect your order from the store during working hours',
+                          context.tr('please_collect_order'),
                           style: TextStyle(
                             fontSize: 11,
                             color: Colors.black,
@@ -2125,7 +2126,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   Icon(Icons.location_on_outlined, color: Colors.black, size: 24),
                   const SizedBox(width: 8),
                   Text(
-                    'Delivery Address',
+                    context.tr('txt_delivery_address'),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -2152,7 +2153,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   }
                 },
                 child: Text(
-                  _selectedAddress == null ? 'Select' : 'Change',
+                  _selectedAddress == null ? context.tr('txt_select') : context.tr('txt_change'),
                   style: const TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.w600,
@@ -2194,8 +2195,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             color: Colors.black,
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Text(
-                            "Default",
+                          child: Text(
+                            context.tr('txt_default'),
                             style: TextStyle(
                               fontSize: 11,
                               color: Colors.white,
@@ -2244,7 +2245,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Please select a delivery address',
+                      context.tr('txt_please_select_delivery'),
                       style: TextStyle(color: Colors.red),
                     ),
                   ),
@@ -2275,7 +2276,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Delivery Method',
+            context.tr('txt_delivery_method'),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -2284,16 +2285,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
           const SizedBox(height: 12),
           _buildDeliveryOption(
-            title: 'Home Delivery',
-            subtitle: 'Deliver to your doorstep',
+            title: context.tr('txt_home_delivery'),
+            subtitle: context.tr('desc_home_delivery'),
             icon: Icons.home_outlined,
             value: 'home_delivery',
             isDark: isDark,
           ),
           const SizedBox(height: 12),
           _buildDeliveryOption(
-            title: 'Store Pickup',
-            subtitle: 'Pickup from nearest store',
+            title: context.tr('title_store_pickup'),
+            subtitle: context.tr('desc_store_pickup'),
             icon: Icons.store_outlined,
             value: 'store_pickup',
             isDark: isDark,
@@ -2397,7 +2398,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Order Items',
+                context.tr('txt_order_items'),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -2405,7 +2406,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
               ),
               Text(
-                '${items.length} item${items.length > 1 ? 's' : ''}',
+                '${items.length} ${context.tr('txt_item')}${items.length > 1 ? 's' : ''}',
                 style: TextStyle(color: Colors.grey),
               ),
             ],
@@ -2501,7 +2502,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Qty: ${item.quantity}',
+                      '${context.tr('txt_qty')}: ${item.quantity}',
                       style: const TextStyle(
                         color: Colors.grey,
                         fontSize: 12,
@@ -2519,7 +2520,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                         ),
                         Text(
-                          'Total: ${itemTotal.toInt()} c.',
+                          '${context.tr('txt_total')}: ${itemTotal.toInt()} c.',
                           style: const TextStyle(
                             color: Colors.grey,
                             fontSize: 11,
@@ -2570,7 +2571,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Order Summary',
+            context.tr('txt_order_summary'),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -2579,17 +2580,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
           const SizedBox(height: 12),
           _buildPriceRow(
-            'Subtotal',
+            context.tr('txt_subtotal'),
             '${calculatedTotal.toInt()} c.',
           ),
-          _buildPriceRow('Delivery', 'FREE', isGreen: true),
-          _buildPriceRow('Service Fee', 'FREE', isGreen: true),
+          _buildPriceRow(context.tr('txt_delivery'), context.tr('txt_free'), isGreen: true),
+          _buildPriceRow(context.tr('txt_service_fee'), context.tr('txt_free'), isGreen: true),
           const Divider(height: 24, color: Colors.grey),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Total Amount',
+                context.tr('txt_total_amount'),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -2659,7 +2660,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Payment Method',
+                context.tr('txt_payment_method'),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -2688,8 +2689,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
           if (_hasCodPayment)
             _buildPaymentOption(
-              title: 'Cash on Delivery',
-              subtitle: 'Pay when you receive',
+              title: context.tr('title_cod'),
+              subtitle: context.tr('desc_cod'),
               icon: Icons.local_shipping_outlined,
               value: 'cod',
               isDark: isDark,
@@ -2755,7 +2756,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Bank Transfer',
+                        context.tr('txt_bank_transfer'),
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -2765,8 +2766,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       const SizedBox(height: 2),
                       Text(
                         _selectedBankDetails != null
-                            ? 'Change bank or pay'
-                            : 'Select bank to pay',
+                            ? context.tr('txt_change_bank_to_pay')
+                            : context.tr('txt_select_to_pay'),
                         style: const TextStyle(color: Colors.grey, fontSize: 12),
                       ),
                     ],
@@ -2784,7 +2785,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ),
                       minimumSize: const Size(0, 30),
                     ),
-                    child: const Text('Select'),
+                    child: Text(context.tr('txt_select')),
                   )
                 else
                   Row(
@@ -2824,7 +2825,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Bank Account Selected',
+                            context.tr('txt_bank_acc_selected'),
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -2836,7 +2837,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Bank: ${_selectedBankDetails!['bank_name']}',
+                      '${context.tr('txt_bank')}: ${_selectedBankDetails!['bank_name']}',
                       style: TextStyle(fontSize: 13, color: isDark ? Colors.white : Colors.black),
                     ),
                     GestureDetector(
@@ -3002,8 +3003,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Total Amount',
+                     Text(
+                      context.tr('txt_total_amount'),
                       style: TextStyle(color: Colors.grey),
                     ),
                     Text(
@@ -3069,19 +3070,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   String _getButtonText() {
     if (_selectedPayment == 'cod') {
-      return 'Place Order (Pay on Delivery)';
+      return context.tr('txt_place_order');
     } else if (_selectedPayment == 'online') {
-      return 'Confirm & Pay Manually';
+      return context.tr('txt_confirm_pay');
     }
-    return 'Place Order';
+    return context.tr('txt_oder_placed');
   }
 
   Future<void> _placeOrder(BuildContext context, CartProvider cart) async {
     // Validation based on delivery method
     if (_deliveryMethod == 'home_delivery' && _selectedAddress == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a delivery address'),
+         SnackBar(
+          content: Text(context.tr('txt_please_select_delivery')),
           backgroundColor: Colors.red,
         ),
       );
@@ -3090,8 +3091,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     if (_selectedPayment == 'online' && _selectedBankDetails == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a bank for payment'),
+         SnackBar(
+          content: Text(context.tr('txt_please_select_bank')),
           backgroundColor: Colors.orange,
         ),
       );
@@ -3124,7 +3125,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(result['message'] ?? 'Failed to place order'),
+              content: Text(result['message'] ?? context.tr('txt_failed_to_place_order')),
               backgroundColor: Colors.red,
             ),
           );
@@ -3180,8 +3181,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             const SizedBox(height: 24),
             Text(
               _selectedPayment == 'cod'
-                  ? 'Order Placed Successfully!'
-                  : 'Order Initiated!',
+                  ? context.tr('txt_order_placed_successfully')
+                  : context.tr('txt_order_initiated'),
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -3192,8 +3193,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             const SizedBox(height: 12),
             Text(
               _selectedPayment == 'cod'
-                  ? 'Thank you for your order. You will receive a confirmation shortly.'
-                  : 'Please complete the payment to the bank account shown. Your order will be processed after payment confirmation.',
+                  ? context.tr('txt_order_placed')
+                  : context.tr('txt_please_complete_bank_details'),
               style: const TextStyle(color: Colors.grey),
               textAlign: TextAlign.center,
             ),
@@ -3217,8 +3218,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Continue Shopping',
+                child: Text(
+                  context.tr('txt_continue_shopping'),
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
@@ -3352,8 +3353,8 @@ class _BankPaymentDialogState extends State<BankPaymentDialog> {
                     children: [
                       Text(
                         widget.currentSelectedBankId != null
-                            ? 'Change Bank Account'
-                            : 'Select Bank Account',
+                            ? context.tr('txt_change_bank_account')
+                            : context.tr('txt_select_bank_account'),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -3361,8 +3362,8 @@ class _BankPaymentDialogState extends State<BankPaymentDialog> {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      const Text(
-                        'Choose the bank account for payment',
+                       Text(
+                        context.tr('txt_choose_bank_acc_for_payment'),
                         style: TextStyle(color: Colors.grey, fontSize: 12),
                       ),
                     ],
@@ -3461,7 +3462,7 @@ class _BankPaymentDialogState extends State<BankPaymentDialog> {
                                 ),
                               ),
                               Text(
-                                'Name: ${bank.accountHolderName}',
+                                '${context.tr('txt_name')}: ${bank.accountHolderName}',
                                 style: const TextStyle(color: Colors.grey, fontSize: 12),
                               ),
                             ],
@@ -3497,8 +3498,8 @@ class _BankPaymentDialogState extends State<BankPaymentDialog> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Total Amount',
+                 Text(
+                  context.tr('txt_total_amount'),
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                   ),
@@ -3531,7 +3532,7 @@ class _BankPaymentDialogState extends State<BankPaymentDialog> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text('Cancel'),
+                    child: Text(context.tr('txt_cancel')),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -3557,8 +3558,8 @@ class _BankPaymentDialogState extends State<BankPaymentDialog> {
                     ),
                     child: Text(
                       widget.currentSelectedBankId != null
-                          ? 'Change Bank'
-                          : 'Confirm Selection',
+                          ? context.tr('txt_change_banks')
+                          : context.tr('txt_confirm_selection'),
                     ),
                   ),
                 ),

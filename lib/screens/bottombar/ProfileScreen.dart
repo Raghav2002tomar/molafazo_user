@@ -1,3 +1,4 @@
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:ecom/screens/auth/LoginScreen.dart';
 import 'package:flutter/material.dart';
 
@@ -76,7 +77,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         //   ),
         // ),
         title: Text(
-          'Profile',
+          context.tr('txt_profile'),
           style: TextStyle(
             color: cs.onSurface,
             fontSize: 18,
@@ -143,7 +144,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     context,
                     cs,
                     Icons.shopping_bag_outlined,
-                    'My Order',
+                    context.tr('txt_my_order'),
                         () {
                       _requireLogin(() {
                         Navigator.push(
@@ -159,7 +160,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     context,
                     cs,
                     Icons.favorite_outline,
-                    'My Favourites',
+                    context.tr('txt_my_fav'),
                     () {
                       Navigator.push(
                         context,
@@ -174,7 +175,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     context,
                     cs,
                     Icons.local_shipping_outlined,
-                    'Shipping Address',
+                    context.tr('txt_shipping_address'),
                         () {
                       _requireLogin(() {
                         Navigator.push(
@@ -190,7 +191,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     context,
                     cs,
                     Icons.credit_card_outlined,
-                    'My Card',
+                    context.tr('txt_my_card'),
                         () {
                       _requireLogin(() {
                         // Navigate to card screen
@@ -222,7 +223,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     context,
                     cs,
                     Icons.help_outline,
-                    'FAQs',
+                    context.tr('txt_faq'),
                     () {
                       Navigator.push(
                         context,
@@ -235,7 +236,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     context,
                     cs,
                     Icons.privacy_tip_outlined,
-                    'Privacy Policy',
+                    context.tr('txt_privacy_policy'),
                     () {},
                     isLast: true,
                   ),
@@ -363,7 +364,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _user!.name.isNotEmpty?   _user!.name: "User" ,
+                    _user!.name.isNotEmpty?   _user!.name: context.tr('txt_user') ,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -437,7 +438,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Login required",
+                    context.tr('txt_login_required'),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
@@ -446,7 +447,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "Access orders, address & profile",
+                    context.tr('txt_access_order'),
                     style: TextStyle(
                       fontSize: 13,
                       color: isDark

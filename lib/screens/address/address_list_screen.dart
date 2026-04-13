@@ -1,3 +1,4 @@
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
 import 'add_address.dart';
 import 'controller/address_services.dart';
@@ -107,14 +108,14 @@ class _AddressListScreenState extends State<AddressListScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          widget.isSelectionMode ? "Select Address" : "Saved Addresses",
+          widget.isSelectionMode ? context.tr('txt_select_address') : context.tr('txt_saved_address'),
           style: tt.titleMedium?.copyWith(
               fontWeight: FontWeight.bold, color: cs.onSurface),
         ),
         Text(
           widget.isSelectionMode
-              ? "Choose a delivery location"
-              : "Manage your delivery locations",
+              ? context.tr('txt_choose_deliver_location')
+              : context.tr('txt_manage_deliver_location'),
           style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant),
         ),
       ],
@@ -214,7 +215,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                     Icon(Icons.star_rounded, size: 10,
                         color: Colors.green.shade700),
                     const SizedBox(width: 3),
-                    Text("Default",
+                    Text(context.tr('txt_default'),
                         style: TextStyle(fontSize: 10,
                             color: Colors.green.shade700,
                             fontWeight: FontWeight.w600)),
@@ -335,7 +336,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                   color: isDark ? Colors.black : Colors.white),
             ),
             const SizedBox(width: 10),
-            Text("Add New Address",
+            Text(context.tr('txt_add_new_address'),
                 style: tt.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700, color: cs.onSurface)),
           ]),
@@ -359,11 +360,11 @@ class _AddressListScreenState extends State<AddressListScreen> {
                   size: 48, color: cs.onSurfaceVariant),
             ),
             const SizedBox(height: 20),
-            Text("No Addresses Yet",
+            Text(context.tr('txt_no_address'),
                 style: tt.titleLarge?.copyWith(
                     fontWeight: FontWeight.w700, color: cs.onSurface)),
             const SizedBox(height: 8),
-            Text("Add your first delivery address to get started",
+            Text(context.tr('add_your_first_delivery'),
                 textAlign: TextAlign.center,
                 style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
             const SizedBox(height: 28),
@@ -372,7 +373,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
               child: ElevatedButton.icon(
                 onPressed: _goToAddAddress,
                 icon: const Icon(Icons.add, size: 18),
-                label: const Text("Add Address"),
+                label: Text(context.tr('txt_add_address')),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isDark ? Colors.white : Colors.black,
                   foregroundColor: isDark ? Colors.black : Colors.white,
@@ -392,7 +393,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           Icon(Icons.error_outline_rounded, size: 56, color: cs.error),
           const SizedBox(height: 12),
-          Text("Failed to load addresses",
+          Text(context.tr('txt_failed_to_load'),
               style: tt.titleMedium?.copyWith(color: cs.error)),
           const SizedBox(height: 6),
           Text(error,
@@ -400,7 +401,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
               style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
           const SizedBox(height: 16),
           TextButton(onPressed: _refresh,
-              child: const Text("Try again")),
+              child: Text(context.tr('txt_try_again'))),
         ]),
       );
 
@@ -428,7 +429,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16)),
               ),
-              child: Text("Confirm Address",
+              child: Text(context.tr('txt_confirm_address'),
                   style: tt.titleSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                       color: isDark ? Colors.black : Colors.white)),

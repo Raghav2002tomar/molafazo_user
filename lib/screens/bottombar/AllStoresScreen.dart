@@ -1,3 +1,4 @@
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:ecom/screens/bottombar/widget/store_card_widget.dart';
 import '../product/store_detail_screen.dart';
@@ -55,7 +56,7 @@ class _AllStoresScreenState extends State<AllStoresScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "All Stores",
+          context.tr('txt_all_stores'),
           style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700),
         ),
         centerTitle: false,
@@ -79,7 +80,7 @@ class _AllStoresScreenState extends State<AllStoresScreen> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                "${filteredStores.length} Stores Available",
+                "${filteredStores.length} ${context.tr('txt_stores_available')}",
                 style: tt.labelMedium?.copyWith(
                   color: cs.primary,
                   fontWeight: FontWeight.w600,
@@ -155,12 +156,12 @@ class _AllStoresScreenState extends State<AllStoresScreen> {
           Icon(Icons.storefront_outlined, size: 70, color: cs.outline),
           const SizedBox(height: 14),
           Text(
-            "No Stores Found",
+            context.tr('txt_no_stores_found'),
             style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
           Text(
-            "Try searching another store",
+            context.tr('txt_try_searching_another_store'),
             style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
           ),
         ],
@@ -205,7 +206,7 @@ class _SearchField extends StatelessWidget {
                 textInputAction: TextInputAction.search,
                 style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
                 decoration: InputDecoration(
-                  hintText: "Search stores...",
+                  hintText: context.tr('txt_search_stores'),
                   hintStyle: tt.bodyMedium?.copyWith(
                     color: cs.onSurfaceVariant.withOpacity(0.7),
                     fontWeight: FontWeight.w400,

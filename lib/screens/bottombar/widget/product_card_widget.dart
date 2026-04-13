@@ -1,4 +1,5 @@
 
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -90,7 +91,7 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text("Please login first")));
+        ).showSnackBar( SnackBar(content: Text(context.tr('txt_login_first'))));
       }
       return;
     }
@@ -110,8 +111,8 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
         if (mounted) {
           context.read<CartProvider>().refreshCart();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Added to cart"),
+             SnackBar(
+              content: Text(context.tr('txt_added_to_cart')),
               backgroundColor: Colors.green,
               duration: Duration(seconds: 2),
             ),
@@ -122,13 +123,13 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
           if (mounted) {
             ScaffoldMessenger.of(
               context,
-            ).showSnackBar(const SnackBar(content: Text("Please login first")));
+            ).showSnackBar(SnackBar(content: Text(context.tr('txt_login_first'))));
           }
         } else {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(res['message'] ?? "Failed to add to cart"),
+                content: Text(res['message'] ?? context.tr('txt_failed_to_add_cart')),
               ),
             );
           }
@@ -138,7 +139,7 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text("Cart error")));
+        ).showSnackBar( SnackBar(content: Text(context.tr('txt_cart_error'))));
       }
     } finally {
       if (mounted) {
@@ -240,7 +241,7 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
                         final token = await AuthStorage.getToken();
                         if (token == null || token.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Please login first")),
+                             SnackBar(content: Text(context.tr('txt_login_first'))),
                           );
                           return;
                         }
@@ -339,8 +340,8 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
                               color: Colors.grey.shade300,
                               borderRadius: BorderRadius.circular(20),
                             ),
-                            child: const Text(
-                              "Out of Stock",
+                            child: Text(
+                              context.tr('txt_out_of_stock'),
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
@@ -371,8 +372,8 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
                                       color: Colors.white,
                                     ),
                                   )
-                                : const Text(
-                                    "Add to Cart",
+                                : Text(
+                                    context.tr('txt_add_to_cart'),
                                     style: TextStyle(fontSize: 12),
                                   ),
                           ),
@@ -604,7 +605,7 @@ class _VariantSelectionBottomSheetState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "Choose Options",
+                            context.tr('txt_choose_option'),
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
@@ -613,7 +614,7 @@ class _VariantSelectionBottomSheetState
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            "Select your preferred variant",
+                            context.tr('txt_select_variant'),
                             style: TextStyle(
                               fontSize: 13,
                               color: Colors.grey.shade500,
@@ -922,8 +923,8 @@ class _VariantSelectionBottomSheetState
               const SizedBox(width: 8),
               Text(
                 selectedCombination != null && selectedCombination!.stock > 0
-                    ? "In Stock • ${selectedCombination!.stock} units available"
-                    : "Out of Stock",
+                    ? "${context.tr('txt_in_stock')} • ${selectedCombination!.stock} ${context.tr('txt_units_available')}"
+                    : context.tr('txt_out_of_stock'),
                 style: TextStyle(
                   fontSize: 13,
                   color:
@@ -1060,8 +1061,8 @@ class _VariantSelectionBottomSheetState
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            "Quantity",
+           Text(
+            context.tr('txt_quantity'),
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           Container(
@@ -1170,8 +1171,8 @@ class _VariantSelectionBottomSheetState
                 const SizedBox(width: 12),
                 Text(
                   isOutOfStock
-                      ? "Out of Stock"
-                      : "Add to Cart • ${totalPrice.toStringAsFixed(0)} c.",
+                      ? context.tr('txt_out_of_stock')
+                      : "${context.tr('txt_add_to_cart')} • ${totalPrice.toStringAsFixed(0)} c.",
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,

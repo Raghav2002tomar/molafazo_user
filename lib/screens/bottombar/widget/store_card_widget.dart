@@ -1,3 +1,4 @@
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../services/api_service.dart';
@@ -117,7 +118,7 @@ class StoreCardWidget extends StatelessWidget {
                 child: Row(
                   children: [
                     Text(
-                      "Shop all",
+                      context.tr('txt_shop_all'),
                       style: tt.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
@@ -585,7 +586,7 @@ class _EmptyProducts extends StatelessWidget {
                   : Colors.grey.shade400),
           const SizedBox(height: 4),
           Text(
-            "No products yet",
+            context.tr('txt_no_products'),
             style: TextStyle(
                 fontSize: 11,
                 color: isDark

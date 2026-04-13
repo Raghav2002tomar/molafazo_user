@@ -1,4 +1,5 @@
 
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:ecom/providers/theme_provider.dart';
 import 'package:ecom/providers/translate_provider.dart';
 import 'package:ecom/screens/auth/LoginScreen.dart';
@@ -74,7 +75,7 @@ class MyApp extends StatelessWidget {
     final darkTheme = AppTheme.dark();
     return MaterialApp(
       navigatorKey: navigatorKey,
-      title: 'ShopEase Professional',
+      title: context.tr('txt_title'),
       debugShowCheckedModeBanner: false,
       scaffoldMessengerKey: rootMessengerKey,
       // theme: AppTheme.light(),

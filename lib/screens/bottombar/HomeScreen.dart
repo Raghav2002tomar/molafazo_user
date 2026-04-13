@@ -1,3 +1,4 @@
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:ecom/screens/bottombar/widget/product_card_widget.dart';
 import 'package:ecom/screens/bottombar/widget/store_card_widget.dart';
 import 'package:ecom/services/api_service.dart';
@@ -197,7 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 const SizedBox(width: 6),
 
                                 Text(
-                                  selectedCity ?? "All Cities"
+                                  selectedCity ?? context.tr('txt_all_cities')
 ,                                  overflow: TextOverflow.ellipsis,
                                   style: tt.bodyMedium?.copyWith(
                                     fontWeight: FontWeight.w600,
@@ -259,7 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           size: 20, color: cs.onSurfaceVariant),
                                       const SizedBox(width: 8),
                                       Text(
-                                        "Search products...",
+                                        context.tr('txt_search_products'),
                                         style: tt.bodyMedium?.copyWith(
                                           color: cs.onSurfaceVariant,
                                         ),
@@ -396,7 +397,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                "No products found",
+                                context.tr('txt_no_products_found'),
                                 style: tt.bodyLarge?.copyWith(
                                   color: cs.onSurface.withOpacity(0.5),
                                 ),
@@ -447,7 +448,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      "Stores",
+                      context.tr('txt_stores'),
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -464,7 +465,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         );
                       },
-                      child: const Text("View All"),
+                      child: Text(context.tr('txt_view_all')),
                     )
                   ],
                 ),
@@ -515,8 +516,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             const SizedBox(height: 8),
                             Text(
                               selectedCity == null
-                                  ? "No stores available"
-                                  : "No stores found in $selectedCity",
+                                  ? context.tr('txt_no_stores_available')
+                                  : "${context.tr('txt_no_store_found')} $selectedCity",
                               style:
                               TextStyle(color: Colors.grey.shade600),
                             ),
@@ -693,7 +694,7 @@ class _ClearFilterButton extends StatelessWidget {
             Icon(Icons.close, size: 14, color: cs.error),
             const SizedBox(width: 4),
             Text(
-              "Clear",
+              context.tr('txt_clear'),
               style: TextStyle(
                 fontSize: 11,
                 color: cs.error,
@@ -1098,7 +1099,7 @@ class _BigPromoCard extends StatelessWidget {
             child: StoreDetailScreen(
               storeId: int.parse(selectedId),
 
-              storeName: banner.title ?? "Store Details",
+              storeName: banner.title ?? context.tr('txt_store_details'),
               // initialCategoryId: categoryId,
               // categoryName: categoryName,
             ),

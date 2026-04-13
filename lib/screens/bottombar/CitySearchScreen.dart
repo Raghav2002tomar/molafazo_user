@@ -1,3 +1,4 @@
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
 
 import 'controller/CityService.dart';
@@ -71,7 +72,7 @@ class _CitySearchScreenState extends State<CitySearchScreen> {
     return Scaffold(
 
       appBar: AppBar(
-        title: const Text("Select City"),
+        title: Text(context.tr('txt_select_city')),
       ),
 
       body: Column(
@@ -84,7 +85,7 @@ class _CitySearchScreenState extends State<CitySearchScreen> {
               controller: searchController,
               onChanged: searchCity,
               decoration: InputDecoration(
-                hintText: "Search city...",
+                hintText: context.tr('txt_search_city'),
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -111,8 +112,8 @@ class _CitySearchScreenState extends State<CitySearchScreen> {
                   /// 🌍 ALL CITIES OPTION
                if(widget.type.toString() != "address")   ListTile(
                     leading: const Icon(Icons.public),
-                    title: const Text(
-                      "All Cities",
+                    title:  Text(
+                      context.tr('txt_all_cities'),
                       style: TextStyle(fontWeight: FontWeight.w600),
                     ),
                     onTap: () async {
@@ -121,7 +122,7 @@ class _CitySearchScreenState extends State<CitySearchScreen> {
 
                       Navigator.pop(context, {
                         "id": null,
-                        "name": "All Cities"
+                        "name": context.tr('txt_all_cities')
                       });
                     },
                   ),

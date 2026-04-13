@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../../extensions/context_extension.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/translate_provider.dart';
 import 'controller/profile_service.dart';
@@ -76,8 +77,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       // ✅ Success toast
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Profile updated successfully"),
+          SnackBar(
+            content: Text(context.tr('profile_updated_success')),
             backgroundColor: Colors.green,
           ),
         );
@@ -129,7 +130,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
         ),
         title: Text(
-          "Profile Edit",
+          context.tr('profile_edit'),
           style: TextStyle(
             color: cs.onBackground,
             fontWeight: FontWeight.w600,
@@ -210,7 +211,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                "Upload image",
+                context.tr('upload_image'),
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: cs.onBackground,
@@ -219,7 +220,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 24),
 
               // Name
-              _buildEditableField("Name", nameCtrl, cs),
+              _buildEditableField(context.tr('txt_name'), nameCtrl, cs),
               const SizedBox(height: 16),
 
               // Gender
@@ -243,17 +244,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               // const SizedBox(height: 16),
 
               // Email
-              _buildEditableField("Email", emailCtrl, cs, error: emailError),
+              _buildEditableField(context.tr('txt_email'), emailCtrl, cs, error: emailError),
               const SizedBox(height: 24),
 
-              _buildReadOnlyField("Phone Number", phoneCtrl, cs),
+              _buildReadOnlyField(context.tr('txt_phone_number'), phoneCtrl, cs),
               const SizedBox(height: 16),
 
               // Settings
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  "Settings",
+                  context.tr('txt_settings'),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -266,7 +267,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               // Language (Popup Menu)
               _buildSettingsItem(
                 icon: Icons.language,
-                title: "Language",
+                title:  context.tr('txt_language'),
                 trailing: PopupMenuButton<String>(
                   onSelected: (lang) {
                     context.read<TranslateProvider>().setLocale(lang);
@@ -283,7 +284,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               // Notification toggle
               _buildSettingsItem(
                 icon: Icons.notifications_none,
-                title: "Notification",
+                title: context.tr('txt_notification'),
                 trailing: Switch(
                   value: notification,
                   onChanged: (val) => setState(() => notification = val),
@@ -293,7 +294,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               // Dark mode toggle (from Provider)
               _buildSettingsItem(
                 icon: Icons.dark_mode_outlined,
-                title: "Dark Mode",
+                title: context.tr('txt_dark_mode'),
                 trailing: Switch(
                   value: isDark,
                   onChanged: (val) => context.read<ThemeProvider>().toggle(),
@@ -303,7 +304,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               // Help center
               _buildSettingsItem(
                 icon: Icons.help_outline,
-                title: "Help Center",
+                title: context.tr('txt_help_center'),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               ),
 
@@ -332,8 +333,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       color: isDark ? Colors.black : Colors.white,
                     ),
                   )
-                      : const Text(
-                    "Save Changes",
+                      : Text(
+                    context.tr('txt_save_changes'),
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -380,7 +381,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     } else {
 
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Logout failed")),
+                         SnackBar(content: Text(context.tr('logout_failed'))),
                       );
 
                     }
@@ -389,7 +390,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                   icon:  Icon(Icons.logout, color:isDark?Colors.black:  Colors.white),
                   label:  Text(
-                    "Log Out",
+                    context.tr('txt_logout'),
                     style: TextStyle(color: isDark?Colors.black:  Colors.white, fontWeight: FontWeight.w800),
                   ),
                 ),

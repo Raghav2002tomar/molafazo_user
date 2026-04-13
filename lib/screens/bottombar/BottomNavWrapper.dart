@@ -1,4 +1,5 @@
 // screens/bottombar/BottomNavWrapper.dart
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
 
 class BottomNavWrapper extends StatelessWidget {
@@ -45,28 +46,28 @@ class BottomNavWrapper extends StatelessWidget {
                   index: 0,
                   currentIndex: currentIndex,
                   icon: Icons.home_rounded,
-                  label: 'Home',
+                  label: context.tr('title_home'),
                   onTap: onTap,
                 ),
                 _NavItem(
                   index: 1,
                   currentIndex: currentIndex,
                   icon: Icons.shopping_cart_outlined,
-                  label: 'Shop',
+                  label: context.tr('title_shop'),
                   onTap: onTap,
                 ),
                 _NavItem(
                   index: 2,
                   currentIndex: currentIndex,
                   icon: Icons.chat_outlined,
-                  label: 'Chat',
+                  label: context.tr('title_chat'),
                   onTap: onTap,
                 ),
                 _NavItem(
                   index: 3,
                   currentIndex: currentIndex,
                   icon: Icons.person_outline_rounded,
-                  label: 'Profile',
+                  label: context.tr('title_profile'),
                   onTap: onTap,
                 ),
               ],

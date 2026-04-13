@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -156,7 +157,7 @@ class _AddAddressScreenState extends State<AddAddressScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _sectionTitle(
-                        "Contact Information",
+                        context.tr('txt_contact_info'),
                         Icons.person_outline_rounded,
                         cs,
                         tt,
@@ -166,7 +167,7 @@ class _AddAddressScreenState extends State<AddAddressScreen>
 
                     _lockedOrField(
                       ctrl: fullNameCtrl,
-                      label: "Full Name",
+                      label: context.tr('txt_full_name'),
                       icon: Icons.badge_outlined,
                       isLocked: _nameIsLocked,
                       cs: cs,
@@ -178,7 +179,7 @@ class _AddAddressScreenState extends State<AddAddressScreen>
 
                     _lockedOrField(
                       ctrl: mobileCtrl,
-                      label: "Mobile Number",
+                      label: context.tr('txt_mobile_number'),
                       icon: Icons.phone_outlined,
                       isLocked: _mobileIsLocked,
                       keyboard: TextInputType.phone,
@@ -207,7 +208,7 @@ class _AddAddressScreenState extends State<AddAddressScreen>
                   children: [
 
                     _sectionTitle(
-                        "Address Details",
+                        context.tr('txt_address_details'),
                         Icons.home_work_outlined,
                         cs,
                         tt,
@@ -218,7 +219,7 @@ class _AddAddressScreenState extends State<AddAddressScreen>
 
                     _inputField(
                       ctrl: addressCtrl,
-                      label: "Full Address",
+                      label: context.tr('txt_full_address'),
                       icon: Icons.place_outlined,
                       maxLines: 2,
                       cs: cs,
@@ -264,10 +265,10 @@ class _AddAddressScreenState extends State<AddAddressScreen>
     title: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Add New Address",
+        Text(context.tr('txt_add_new_address'),
             style: tt.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700, color: cs.onSurface)),
-        Text("Fill in your delivery details",
+        Text(context.tr('txt_fill_in_your_delivery_details'),
             style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
       ],
     ),
@@ -312,14 +313,14 @@ class _AddAddressScreenState extends State<AddAddressScreen>
       child: AbsorbPointer(
         child: _inputField(
           ctrl: cityCtrl,
-          label: "City",
+          label: context.tr('txt_city'),
           icon: Icons.location_city_outlined,
           cs: cs,
           tt: tt,
           isDark: isDark,
           validator: (v) {
             if (v == null || v.isEmpty) {
-              return "Please select city";
+              return context.tr('hint_select_city');
             }
             return null;
           },
@@ -373,7 +374,7 @@ class _AddAddressScreenState extends State<AddAddressScreen>
       SizedBox(width: 14, height: 14,
           child: CircularProgressIndicator(strokeWidth: 2, color: cs.primary)),
       const SizedBox(width: 8),
-      Text("Searching…",
+      Text(context.tr('txt_searching'),
           style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
     ]),
   );
@@ -454,10 +455,10 @@ class _AddAddressScreenState extends State<AddAddressScreen>
             Expanded(child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Deliver to someone else",
+                Text(context.tr('txt_deliver_to_else'),
                     style: tt.bodySmall?.copyWith(
                         fontWeight: FontWeight.w700, color: cs.onSurface)),
-                Text("Change recipient name & number",
+                Text(context.tr('txt_recipient_change'),
                     style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
               ],
             )),
@@ -477,7 +478,7 @@ class _AddAddressScreenState extends State<AddAddressScreen>
         child: Row(children: [
           Icon(Icons.info_outline_rounded, size: 15, color: cs.primary),
           const SizedBox(width: 8),
-          Expanded(child: Text("Edit name & mobile for the recipient",
+          Expanded(child: Text(context.tr('txt_edit_name_mobile'),
               style: tt.labelSmall?.copyWith(
                   color: cs.onSurface, fontWeight: FontWeight.w500))),
           GestureDetector(
@@ -502,10 +503,10 @@ class _AddAddressScreenState extends State<AddAddressScreen>
         Expanded(child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Set as Default Address",
+            Text(context.tr('txt_save_as_default'),
                 style: tt.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w700, color: cs.onSurface)),
-            Text("Used automatically at checkout",
+            Text(context.tr('txt_automatically_used'),
                 style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
           ],
         )),
@@ -548,7 +549,7 @@ class _AddAddressScreenState extends State<AddAddressScreen>
                 : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               Icon(Icons.check_circle_outline_rounded, size: 18),
               const SizedBox(width: 8),
-              Text("Save Address", style: tt.titleSmall?.copyWith(
+              Text(context.tr('txt_save_address'), style: tt.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: isDark ? Colors.black : Colors.white)),
             ]),
