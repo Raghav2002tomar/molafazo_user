@@ -8,7 +8,9 @@ import '../../../services/api_service.dart';
 import '../../../services/auth_service.dart';
 import '../../cart/controller/cart_services.dart';
 import '../../product/product_details_screen.dart';
+import '../controller/CityService.dart';
 import '../model/product_model.dart';
+import '../model/store_model.dart';
 
 class ProductCardWidget extends StatefulWidget {
   final ProductModel product;
@@ -32,13 +34,31 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
   late bool isFav;
   int quantity = 1;
   bool isLoading = false;
+  String? selectedDeliveryCity;
 
   @override
   void initState() {
     super.initState();
     isFav = widget.product.isFavorite ?? false;
+    loadSelectedDeliveryCity();
   }
 
+  Future<void> loadSelectedDeliveryCity() async {
+    final deliveryFilter = await CityStorage.getDeliveryFilter();
+    final cityData = await CityStorage.getCity();
+
+    final deliveryCity = deliveryFilter["delivery_city"];
+    final normalCity = cityData["name"];
+
+    if (mounted) {
+      setState(() {
+        selectedDeliveryCity =
+        deliveryCity != null && deliveryCity.toString().trim().isNotEmpty
+            ? deliveryCity.toString()
+            : normalCity?.toString();
+      });
+    }
+  }
   /// Show variant selection bottom sheet
   Future<void> _showVariantBottomSheet() async {
     final product = widget.product;
@@ -59,15 +79,16 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => VariantSelectionBottomSheet(
-        product: product,
-        onAddToCart: (combinationId, quantity) async {
-          Navigator.pop(context, {
-            'combinationId': combinationId,
-            'quantity': quantity,
-          });
-        },
-      ),
+        builder: (context) => VariantSelectionBottomSheet(
+          product: product,
+          deliveryEtaText: getDeliveryEta(product),
+          onAddToCart: (combinationId, quantity) async {
+            Navigator.pop(context, {
+              'combinationId': combinationId,
+              'quantity': quantity,
+            });
+          },
+        ),
     );
 
     if (result != null && mounted) {
@@ -148,6 +169,188 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
         });
       }
     }
+  }
+
+  DeliveryConfigModel? getSelectedDeliveryConfig(ProductModel product) {
+    final configs = product.store.deliveryConfig;
+
+    if (configs.isEmpty) return null;
+
+    if (selectedDeliveryCity != null &&
+        selectedDeliveryCity!.trim().isNotEmpty &&
+        selectedDeliveryCity != context.tr('txt_all_cities')) {
+      final selectedCityName = selectedDeliveryCity!.trim().toLowerCase();
+
+      final matched = configs.where((e) {
+        return e.enabled &&
+            e.city.trim().toLowerCase() == selectedCityName;
+      }).toList();
+
+      if (matched.isNotEmpty) return matched.first;
+
+      return null;
+    }
+
+    // No selected city = do not pick random/first config
+    return null;
+  }
+  int _timeToMinutes(String time) {
+    try {
+      final parts = time.split(':');
+      return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+    } catch (_) {
+      return 9 * 60;
+    }
+  }
+
+  String _formatMinutes(int totalMinutes) {
+    final normalized = totalMinutes % (24 * 60);
+    final hour = normalized ~/ 60;
+    final minute = normalized % 60;
+
+    return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+  }
+
+
+  String getDeliveryEta(ProductModel product) {
+    final config = getSelectedDeliveryConfig(product);
+
+    if (config == null) {
+      return context.tr('txt_delivery_not_available');
+    }
+
+    final workingHours = product.store.workingHours;
+
+    int openingMinutes = 9 * 60;
+    int closingMinutes = 19 * 60;
+
+    if (workingHours.contains('-')) {
+      final parts = workingHours.split('-');
+      openingMinutes = _timeToMinutes(parts[0].trim());
+      closingMinutes = _timeToMinutes(parts[1].trim());
+    }
+
+    final int deliveryMinutes = config.deliveryTimeUnit == 'day'
+        ? 24 * 60
+        : config.deliveryTimeValue * 60;
+
+    final now = TimeOfDay.now();
+    final currentMinutes = now.hour * 60 + now.minute;
+
+    // 1 day delivery always next day
+    if (config.deliveryTimeUnit == 'day') {
+      return '${context.tr('txt_tomorrow_by')} ${_formatMinutes(openingMinutes)}';
+    }
+
+    // Before opening time
+    if (currentMinutes < openingMinutes) {
+      final eta = openingMinutes + deliveryMinutes;
+
+      if (eta <= closingMinutes) {
+        return '${context.tr('txt_today_by')} ${_formatMinutes(eta)}';
+      }
+
+      final tomorrowEta = openingMinutes + deliveryMinutes;
+      return '${context.tr('txt_tomorrow_by')} ${_formatMinutes(tomorrowEta)}';
+    }
+
+    // After closing time
+    if (currentMinutes >= closingMinutes) {
+      final tomorrowEta = openingMinutes + deliveryMinutes;
+      return '${context.tr('txt_tomorrow_by')} ${_formatMinutes(tomorrowEta)}';
+    }
+
+    // During working hours
+    final todayEta = currentMinutes + deliveryMinutes;
+
+    if (todayEta <= closingMinutes) {
+      return '${context.tr('txt_today_by')} ${_formatMinutes(todayEta)}';
+    }
+
+    // During working hours but cannot finish today
+    final tomorrowEta = openingMinutes + deliveryMinutes;
+    return '${context.tr('txt_tomorrow_by')} ${_formatMinutes(tomorrowEta)}';
+  }
+
+  String _getOpeningTime(ProductModel product) {
+    final workingHours = product.store.workingHours;
+
+    if (workingHours.contains('-')) {
+      return workingHours.split('-').first.trim();
+    }
+
+    return '09:00';
+  }
+
+  String getDeliveryTypeText(ProductModel product) {
+    final config = getSelectedDeliveryConfig(product);
+
+    if (config == null) {
+      return context.tr('txt_delivery_not_available');
+    }
+
+    if (config.deliveryType == 'courier') {
+      return '🚚 ${context.tr('txt_door_delivery')}';
+    }
+
+    return '🚕 ${context.tr('txt_taxi_intercity_delivery')}';
+  }
+
+  String getDeliveryShortTime(ProductModel product) {
+    final config = getSelectedDeliveryConfig(product);
+
+    if (config == null) return '';
+
+    if (config.deliveryTimeUnit == 'day') {
+      return context.tr('txt_1_day');
+    }
+
+    return '${config.deliveryTimeValue} ${context.tr('txt_hours')}';
+  }
+  Widget _buildDeliveryInfo(ProductModel product) {
+    final config = getSelectedDeliveryConfig(product);
+
+    if (config == null) {
+      return Text(
+        context.tr('txt_delivery_not_available'),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          fontSize: 11,
+          color: Colors.red,
+          fontWeight: FontWeight.w600,
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '${getDeliveryTypeText(product)} '
+              // '. ${getDeliveryShortTime(product)}'
+              '',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 11,
+            color: Colors.green,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 2),
+        // Text(
+        //   getDeliveryEta(product),
+        //   maxLines: 1,
+        //   overflow: TextOverflow.ellipsis,
+        //   style: TextStyle(
+        //     fontSize: 10,
+        //     color: Colors.grey.shade700,
+        //     fontWeight: FontWeight.w600,
+        //   ),
+        // ),
+      ],
+    );
   }
 
   @override
@@ -328,7 +531,9 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
                     ],
                   ),
                   const SizedBox(height: 8),
+                  _buildDeliveryInfo(product),
 
+                  const SizedBox(height: 8),
                   // Cart Button
                   SizedBox(
                     width: double.infinity,
@@ -373,9 +578,13 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
                                     ),
                                   )
                                 : Text(
-                                    context.tr('txt_add_to_cart'),
-                                    style: TextStyle(fontSize: 12),
-                                  ),
+                              getDeliveryShortTime(product).isNotEmpty
+                                  ? getDeliveryEta(product)
+                                  : context.tr('txt_add_to_cart'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 11),
+                            ),
                           ),
                   ),
                 ],
@@ -419,10 +628,13 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
               child: Icon(Icons.remove, size: 16),
             ),
           ),
+          SizedBox(width: 16,),
           Text(
             cartQty.toString(),
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
+          SizedBox(width: 16,),
+
           InkWell(
             onTap: () async {
               final cartProvider = context.read<CartProvider>();
@@ -452,11 +664,14 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
 class VariantSelectionBottomSheet extends StatefulWidget {
   final ProductModel product;
   final Function(int? combinationId, int quantity) onAddToCart;
+  final String deliveryEtaText;
 
   const VariantSelectionBottomSheet({
     super.key,
     required this.product,
     required this.onAddToCart,
+    required this.deliveryEtaText,
+
   });
 
   @override
@@ -1172,8 +1387,7 @@ class _VariantSelectionBottomSheetState
                 Text(
                   isOutOfStock
                       ? context.tr('txt_out_of_stock')
-                      : "${context.tr('txt_add_to_cart')} • ${totalPrice.toStringAsFixed(0)} c.",
-                  style: const TextStyle(
+                      : "${widget.deliveryEtaText} • ${totalPrice.toStringAsFixed(0)} c.",                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),

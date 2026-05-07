@@ -9,6 +9,7 @@ import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../providers/cart_provider.dart';
 import '../bottombar/BottomNavWrapper.dart';
+import '../bottombar/controller/CityService.dart';
 import '../bottombar/widget/product_card_widget.dart';
 import '../cart/controller/cart_services.dart';
 import '../chat/ConversationScreen.dart';
@@ -35,7 +36,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     bool _isDisposed = false;
     late bool isFav;
     int? _selectedCombinationId;
-
+    String? selectedDeliveryCity;
     // Add these for combination selection
     Map<String, String> _selectedAttributes = {};
     double _selectedPrice = 0;
@@ -57,7 +58,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     @override
     void initState() {
         super.initState();
+        loadSelectedDeliveryCity();
         _loadProductData();
+    }
+
+    Future<void> loadSelectedDeliveryCity() async {
+      final deliveryFilter = await CityStorage.getDeliveryFilter();
+      final cityData = await CityStorage.getCity();
+
+      final deliveryCity = deliveryFilter["delivery_city"];
+      final normalCity = cityData["name"];
+
+      if (mounted) {
+        setState(() {
+          selectedDeliveryCity =
+          deliveryCity != null && deliveryCity.toString().trim().isNotEmpty
+              ? deliveryCity.toString()
+              : normalCity?.toString();
+        });
+      }
     }
 
     @override
@@ -66,6 +85,134 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         super.dispose();
     }
 
+    String getDeliveryTypeText(ProductDetail product) {
+      final config = getSelectedDeliveryConfig(product);
+
+      if (config == null) {
+        return context.tr('txt_delivery_not_available');
+      }
+
+      if (config.deliveryType == 'courier') {
+        return '🚚 ${context.tr('txt_door_delivery')}';
+      }
+
+      return '🚕 ${context.tr('txt_taxi_intercity_delivery')}';
+    }
+
+    String getDeliveryShortTime(ProductDetail product) {
+      final config = getSelectedDeliveryConfig(product);
+
+      if (config == null) return '';
+
+      if (config.deliveryTimeUnit == 'day') {
+        return context.tr('txt_1_day');
+      }
+
+      return '${config.deliveryTimeValue} ${context.tr('txt_hours')}';
+    }
+
+    dynamic getSelectedDeliveryConfig(ProductDetail product) {
+      final configs = product.store?.deliveryConfig ?? [];
+
+      if (configs.isEmpty) return null;
+
+      bool isEnabled(dynamic value) {
+        return value == true ||
+            value == 1 ||
+            value.toString() == '1' ||
+            value.toString().toLowerCase() == 'true';
+      }
+
+      if (selectedDeliveryCity != null &&
+          selectedDeliveryCity!.trim().isNotEmpty &&
+          selectedDeliveryCity != context.trRead('txt_all_cities')      )
+      {
+        final selectedCityName = selectedDeliveryCity!.trim().toLowerCase();
+
+        final matched = configs.where((e) {
+          return isEnabled(e.enabled) &&
+              e.city.trim().toLowerCase() == selectedCityName;
+        }).toList();
+
+        if (matched.isNotEmpty) return matched.first;
+
+        return null;
+      }
+
+      return null;
+    }
+
+    int _timeToMinutes(String time) {
+      try {
+        final parts = time.split(':');
+        return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+      } catch (_) {
+        return 9 * 60;
+      }
+    }
+
+    String _formatMinutes(int totalMinutes) {
+      final normalized = totalMinutes % (24 * 60);
+      final hour = normalized ~/ 60;
+      final minute = normalized % 60;
+
+      return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+    }
+
+    String getDeliveryEta(ProductDetail product) {
+      final config = getSelectedDeliveryConfig(product);
+
+      if (config == null) {
+        return context.tr('txt_delivery_not_available');
+      }
+
+      final workingHours = product.store?.workingHours ?? '';
+
+      int openingMinutes = 9 * 60;
+      int closingMinutes = 19 * 60;
+
+      if (workingHours.contains('-')) {
+        final parts = workingHours.split('-');
+        openingMinutes = _timeToMinutes(parts[0].trim());
+        closingMinutes = _timeToMinutes(parts[1].trim());
+      }
+
+      final int deliveryValue =
+          int.tryParse(config.deliveryTimeValue.toString()) ?? 0;
+
+      final int deliveryMinutes = config.deliveryTimeUnit == 'day'
+          ? 24 * 60
+          : deliveryValue * 60;
+
+      final now = TimeOfDay.now();
+      final currentMinutes = now.hour * 60 + now.minute;
+
+      if (config.deliveryTimeUnit == 'day') {
+        return '${context.tr('txt_tomorrow_by')} ${_formatMinutes(openingMinutes)}';
+      }
+
+      if (currentMinutes < openingMinutes) {
+        final eta = openingMinutes + deliveryMinutes;
+
+        if (eta <= closingMinutes) {
+          return '${context.tr('txt_today_by')} ${_formatMinutes(eta)}';
+        }
+
+        return '${context.tr('txt_tomorrow_by')} ${_formatMinutes(openingMinutes + deliveryMinutes)}';
+      }
+
+      if (currentMinutes >= closingMinutes) {
+        return '${context.tr('txt_tomorrow_by')} ${_formatMinutes(openingMinutes + deliveryMinutes)}';
+      }
+
+      final todayEta = currentMinutes + deliveryMinutes;
+
+      if (todayEta <= closingMinutes) {
+        return '${context.tr('txt_today_by')} ${_formatMinutes(todayEta)}';
+      }
+
+      return '${context.tr('txt_tomorrow_by')} ${_formatMinutes(openingMinutes + deliveryMinutes)}';
+    }
     Future<void> _fetchReviews() async {
         if (!mounted) return;
 
@@ -729,113 +876,102 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
 
     Future<void> _handleAddToCart(ProductDetail product) async {
-        final isLoggedIn = await AuthStorage.isLoggedIn();
+      final isLoggedIn = await AuthStorage.isLoggedIn();
 
-        if (!isLoggedIn) {
-            _showLoginDialog();
-            return;
-        }
+      if (!isLoggedIn) {
+        _showLoginDialog();
+        return;
+      }
+
+      setState(() {
+        _isAddingToCart = true;
+      });
+
+      try {
+        final result = await CartService.addToCart(
+          productId: product.id,
+          quantity: quantity,
+          combinationId: _selectedCombinationId,
+        );
+
+        if (!mounted) return;
 
         setState(() {
-                _isAddingToCart = true;
-            });
+          _isAddingToCart = false;
+        });
 
-        try {
-            final result = await CartService.addToCart(
-                productId: product.id,
-                quantity: quantity,
-                combinationId: _selectedCombinationId
-            );
+        if (result['status'] == true) {
+          context.read<CartProvider>().fetchCartCount();
 
-            setState(() {
-                    _isAddingToCart = false;
-                });
+          final addedText = context.trRead('txt_added_to_cart');
+          final viewCartText = context.trRead('txt_view_cart');
 
-            if (result['status'] == true) {
-                if (mounted) {
-                    context.read<CartProvider>().fetchCartCount();
-                }
-
-                if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Row(
-                                children: [
-                                    const Icon(Icons.check_circle, color: Colors.white),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                        child: Text(
-                                            result['message'] ?? '${product.name} ${context.tr('txt_added_to_cart')}'
-                                        )
-                                    )
-                                ]
-                            ),
-                            backgroundColor: Colors.green,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)
-                            ),
-                            action: SnackBarAction(
-                                label: context.tr('txt_view_cart'),
-                                textColor: Colors.white,
-                                onPressed: () {
-                                    Navigator.push(
-                                        context,
-                                        MaterialPageRoute(builder: (context) => CartScreen())
-                                    );
-                                }
-                            )
-                        )
-                    );
-                }
-            } else {
-                if (result['requiresLogin'] == true) {
-                    _showLoginDialog();
-                } else if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text(result['message'] ?? 'Failed to add to cart'), // Static fallback
-                            backgroundColor: Colors.red,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)
-                            )
-                        )
-                    );
-                }
-        /*if (result['requiresLogin'] == true) {
-          _showLoginDialog();
-        } else if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(result['message'] ?? context.tr('txt_failed_to_add_cart')),
-              backgroundColor: Colors.red,
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      result['message'] ?? '${product.name} $addedText',
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
+              action: SnackBarAction(
+                label: viewCartText,
+                textColor: Colors.white,
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => CartScreen()),
+                  );
+                },
+              ),
             ),
           );
-        }*/
-            }
-        } catch (e) {
-            setState(() {
-                    _isAddingToCart = false;
-                });
-
-            if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text('${context.tr('txt_error')}: ${e.toString()}'),
-                        backgroundColor: Colors.red,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)
-                        )
-                    )
-                );
-            }
+        } else {
+          if (result['requiresLogin'] == true) {
+            _showLoginDialog();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  result['message'] ?? context.trRead('txt_failed_to_add_cart'),
+                ),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+          }
         }
+      } catch (e) {
+        if (!mounted) return;
+
+        setState(() {
+          _isAddingToCart = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${context.trRead('txt_error')}: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
     }
 
     void _showLoginDialog() {
@@ -956,6 +1092,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             bg: isDark ? Colors.white : Colors.black,
                             fg: isDark ? Colors.black : Colors.white,
                             onTap: () async {
+                              final result = await CartService.getCartList();
+
+                              if (result['requiresLogin'] == true) {
+                                // User not logged in, redirect to login
+                                if (mounted) {
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const AuthScreen())
+                                  );
+                                }
+                                return;
+                              }
                                 final vendorId = product.store!.userId;
                                 final vendorName = product.store!.name;
                                 final vendorImage = product.store!.logo;
@@ -997,15 +1145,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             onTap: () async {
                                 final token = await AuthStorage.getToken();
 
-                                if (token == null || token.isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                            content: Text(context.tr('txt_login_first'))
-                                        )
-                                    );
-                                    return;
-                                }
+                                final result = await CartService.getCartList();
 
+                                if (result['requiresLogin'] == true) {
+                                  // User not logged in, redirect to login
+                                  if (mounted) {
+                                    Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => const AuthScreen())
+                                    );
+                                  }
+                                  return;
+                                }
                                 try {
                                     final res = await ApiService.post(
                                         endpoint: "/customer/product/favorite/toggle",
@@ -1342,12 +1493,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                                     color: cs.onSurface
                                                                 )
                                                             ),
-                                                            Text(
-                                                                '${_getDeliveryPriceText(product)} • ${_getDeliveryTimeText(product)}',
+                                                          Column(
+                                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                                            children: [
+                                                              Text(
+                                                                '${getDeliveryTypeText(product)} • ${getDeliveryShortTime(product)}',
                                                                 style: tt.bodySmall?.copyWith(
-                                                                    color: cs.onSurfaceVariant
-                                                                )
-                                                            )
+                                                                  color: Colors.green,
+                                                                  fontWeight: FontWeight.w700,
+                                                                ),
+                                                              ),
+                                                              const SizedBox(height: 3),
+                                                              Text(
+                                                                '${_getDeliveryPriceText(product)} • ${getDeliveryEta(product)}',
+                                                                style: tt.bodySmall?.copyWith(
+                                                                  color: cs.onSurfaceVariant,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          )
                                                         ]
                                                     )
                                                 )
@@ -1756,17 +1920,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                             Icons.shopping_bag_outlined,
                                             color: isDark ? Colors.black : Colors.white
                                         ),
-                                    label: Text(
-                                        _isAddingToCart ? context.tr('txt_adding') :
-                                            (!canAddToCart && _selectedStock == 0 && _cachedProductData!.data.combinations.isNotEmpty)
-                                                ? context.tr('txt_out_of_stock')
-                                                : context.tr('txt_add_to_cart'),
-                                        style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                            color: isDark ? Colors.black : Colors.white
-                                        )
-                                    ),
+                                     label: Text(
+                                    canAddToCart
+                                    ? getDeliveryEta(product)
+                                    : context.tr('txt_out_of_stock'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                                     style: ElevatedButton.styleFrom(
                                         elevation: 0,
                                         backgroundColor: isDark ? Colors.white : Colors.black,

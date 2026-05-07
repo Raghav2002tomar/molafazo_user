@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:ecom/screens/onboarding/OnBoardingScreen.dart';
@@ -8,8 +9,8 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../extensions/context_extension.dart';
+import '../../providers/notification_handler.dart';
 import '../../providers/theme_provider.dart';
-import '../../providers/translate_provider.dart';
 import 'controller/profile_service.dart';
 import 'controller/user_storage.dart';
 import 'model/user_model.dart';
@@ -52,6 +53,89 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
     setState(() => loading = false);
   }
+  Future<bool> deleteAccount() async {
+    final token = await AuthStorage.getToken();
+
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiService.baseUrl}/delete-account'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['status'] == true) {
+        return true;
+      } else {
+        print("Delete account failed: ${response.body}");
+        return false;
+      }
+    } catch (e) {
+      print("Delete account error: $e");
+      return false;
+    }
+  }
+
+  Future<void> _confirmDeleteAccount() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(context.trRead('txt_delete_account')),
+          content: Text(context.trRead('txt_delete_account_confirm')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(context.trRead('txt_cancel')),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(
+                context.trRead('txt_delete'),
+                style: const TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result != true) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final success = await deleteAccount();
+
+    if (mounted) Navigator.pop(context);
+
+    if (success) {
+      await AuthStorage.logout();
+
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const OnBoardingScreen()),
+              (route) => false,
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.trRead('txt_delete_account_failed')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
 
   Future<void> _pickImage() async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
@@ -74,17 +158,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         image: profileImage,
       );
 
-      // ✅ Success toast
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.tr('profile_updated_success')),
+            content: Text(context.trRead('profile_updated_success')),
             backgroundColor: Colors.green,
           ),
         );
       }
+
       await AuthStorage.saveName(nameCtrl.text);
-      Navigator.pop(context, true);
+
+      if (mounted) {
+        Navigator.pop(context, true);
+      }
     } catch (e) {
       final msg = e.toString().replaceFirst('Exception: ', '');
 
@@ -92,7 +179,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         emailError = msg;
       });
 
-      // ❌ Error toast
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -107,7 +193,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
     }
   }
-
 
 
   @override
@@ -251,62 +336,62 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 16),
 
               // Settings
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  context.tr('txt_settings'),
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: cs.onBackground,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
+              // Align(
+              //   alignment: Alignment.centerLeft,
+              //   child: Text(
+              //     context.tr('txt_settings'),
+              //     style: TextStyle(
+              //       fontSize: 18,
+              //       fontWeight: FontWeight.w700,
+              //       color: cs.onBackground,
+              //     ),
+              //   ),
+              // ),
+              // const SizedBox(height: 16),
 
               // Language (Popup Menu)
-              _buildSettingsItem(
-                icon: Icons.language,
-                title:  context.tr('txt_language'),
-                trailing: PopupMenuButton<String>(
-                  onSelected: (lang) {
-                    context.read<TranslateProvider>().setLocale(lang);
-                  },
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(value: 'en', child: Text('English')),
-                    PopupMenuItem(value: 'ru', child: Text('Русский')),
-                    PopupMenuItem(value: 'tg', child: Text('Тоҷикӣ')),
-                  ],
-                  icon: const Icon(Icons.arrow_drop_down),
-                ),
-              ),
-
-              // Notification toggle
-              _buildSettingsItem(
-                icon: Icons.notifications_none,
-                title: context.tr('txt_notification'),
-                trailing: Switch(
-                  value: notification,
-                  onChanged: (val) => setState(() => notification = val),
-                ),
-              ),
+              // _buildSettingsItem(
+              //   icon: Icons.language,
+              //   title:  context.tr('txt_language'),
+              //   trailing: PopupMenuButton<String>(
+              //     onSelected: (lang) {
+              //       context.read<TranslateProvider>().setLocale(lang);
+              //     },
+              //     itemBuilder: (context) => const [
+              //       PopupMenuItem(value: 'en', child: Text('English')),
+              //       PopupMenuItem(value: 'ru', child: Text('Русский')),
+              //       PopupMenuItem(value: 'tg', child: Text('Тоҷикӣ')),
+              //     ],
+              //     icon: const Icon(Icons.arrow_drop_down),
+              //   ),
+              // ),
+              //
+              // // Notification toggle
+              // _buildSettingsItem(
+              //   icon: Icons.notifications_none,
+              //   title: context.tr('txt_notification'),
+              //   trailing: Switch(
+              //     value: notification,
+              //     onChanged: (val) => setState(() => notification = val),
+              //   ),
+              // ),
 
               // Dark mode toggle (from Provider)
-              _buildSettingsItem(
-                icon: Icons.dark_mode_outlined,
-                title: context.tr('txt_dark_mode'),
-                trailing: Switch(
-                  value: isDark,
-                  onChanged: (val) => context.read<ThemeProvider>().toggle(),
-                ),
-              ),
-
-              // Help center
-              _buildSettingsItem(
-                icon: Icons.help_outline,
-                title: context.tr('txt_help_center'),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              ),
+              // _buildSettingsItem(
+              //   icon: Icons.dark_mode_outlined,
+              //   title: context.tr('txt_dark_mode'),
+              //   trailing: Switch(
+              //     value: isDark,
+              //     onChanged: (val) => context.read<ThemeProvider>().toggle(),
+              //   ),
+              // ),
+              //
+              // // Help center
+              // _buildSettingsItem(
+              //   icon: Icons.help_outline,
+              //   title: context.tr('txt_help_center'),
+              //   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              // ),
 
               const SizedBox(height: 24),
               const SizedBox(height: 24),
@@ -392,6 +477,29 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   label:  Text(
                     context.tr('txt_logout'),
                     style: TextStyle(color: isDark?Colors.black:  Colors.white, fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: _confirmDeleteAccount,
+                  icon: const Icon(Icons.delete_forever, color: Colors.white),
+                  label: Text(
+                    context.tr('txt_delete_account'),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ),

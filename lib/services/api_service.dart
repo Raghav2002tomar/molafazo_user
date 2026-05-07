@@ -22,6 +22,9 @@ class ApiService {
   static const String review_images_URL = 'assets/review_images/';
 
 
+  static const bool isBebugmode = false;
+
+
   /// 🔹 Common headers
   static Map<String, String> _headers({String? token}) {
     return {

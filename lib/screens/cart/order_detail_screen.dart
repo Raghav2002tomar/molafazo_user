@@ -11,6 +11,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:provider/provider.dart';
+import '../../providers/notification_handler.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../chat/ConversationScreen.dart';
@@ -157,18 +159,25 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return total;
   }
 
-  Future<void> _generateReceiptPdf(Map<String, dynamic> order, List<OrderItemModel> items) async {
+  Future<void> _generateReceiptPdf(
+      Map<String, dynamic> order,
+      List<OrderItemModel> items,
+      ) async {
+    final t = (String key) =>
+        Provider.of<TranslateProvider>(context, listen: false).t(key);
+
     final pdf = pw.Document();
     final statusData = getOrderStatus(order['status'] ?? 0);
     final totalAmount = _calculateTotal(order);
     final vendor = order['vendor'];
-
-    // Get order ID for filename
     final orderId = order['order_id']?.toString() ?? widget.orderId.toString();
 
-    // Load custom font for Unicode support (Russian, Tajik, etc.)
-    final fontRegular = await pw.Font.ttf(await rootBundle.load('assets/fonts/CirceRounded-Regular.ttf'));
-    final fontBold = await pw.Font.ttf(await rootBundle.load('assets/fonts/CirceRounded-Regular.ttf'));
+    final fontRegular = await pw.Font.ttf(
+      await rootBundle.load('assets/fonts/CirceRounded-Regular.ttf'),
+    );
+    final fontBold = await pw.Font.ttf(
+      await rootBundle.load('assets/fonts/CirceRounded-Regular.ttf'),
+    );
 
     pdf.addPage(
       pw.Page(
@@ -178,10 +187,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              // Header
               pw.Container(
                 width: double.infinity,
-                padding: const pw.EdgeInsets.symmetric(vertical: 22, horizontal: 24),
+                padding: const pw.EdgeInsets.symmetric(
+                  vertical: 22,
+                  horizontal: 24,
+                ),
                 decoration: pw.BoxDecoration(
                   color: PdfColors.green700,
                   borderRadius: pw.BorderRadius.circular(12),
@@ -190,7 +201,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text(
-                      context.tr('txt_order_receipt'),
+                      t('txt_order_receipt'),
                       style: pw.TextStyle(
                         font: fontBold,
                         color: PdfColors.white,
@@ -201,24 +212,34 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     ),
                     pw.SizedBox(height: 4),
                     pw.Text(
-                      '${context.tr('txt_order')} #${order['order_id']}',
-                      style: pw.TextStyle(font: fontRegular, color: PdfColors.white, fontSize: 14),
+                      '${t('txt_order')} #${order['order_id']}',
+                      style: pw.TextStyle(
+                        font: fontRegular,
+                        color: PdfColors.white,
+                        fontSize: 14,
+                      ),
                     ),
                     pw.SizedBox(height: 4),
                     pw.Text(
                       _formatDateTime(order['created_at'] ?? order['createdAt']),
-                      style: pw.TextStyle(font: fontRegular, color: PdfColors.white, fontSize: 11),
+                      style: pw.TextStyle(
+                        font: fontRegular,
+                        color: PdfColors.white,
+                        fontSize: 11,
+                      ),
                     ),
                   ],
                 ),
               ),
               pw.SizedBox(height: 22),
 
-              // Status
               pw.Row(
                 children: [
                   pw.Container(
-                    padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    padding: const pw.EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
+                    ),
                     decoration: pw.BoxDecoration(
                       color: statusData.$2 == const Color(0xFF22C55E)
                           ? PdfColors.green100
@@ -251,8 +272,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   ),
                   pw.Spacer(),
                   pw.Text(
-                    '${context.tr('txt_payment')}: ${(order['payment_type']?.toString() ?? 'N/A').toUpperCase()}',
-                    style: pw.TextStyle(font: fontRegular, fontSize: 11, color: PdfColors.grey700),
+                    '${t('txt_payment')}: ${(order['payment_type']?.toString() ?? 'N/A').toUpperCase()}',
+                    style: pw.TextStyle(
+                      font: fontRegular,
+                      fontSize: 11,
+                      color: PdfColors.grey700,
+                    ),
                   ),
                 ],
               ),
@@ -260,43 +285,123 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               pw.Divider(color: PdfColors.grey300, thickness: 1),
               pw.SizedBox(height: 16),
 
-              // Store Information
-              _pdfSectionTitle(context.tr('txt_store_info'), fontBold),
+              _pdfSectionTitle(t('txt_store_info'), fontBold),
               pw.SizedBox(height: 10),
-              _pdfRow(context.tr('txt_store_name'), vendor?['store_name']?.toString() ?? 'N/A', fontRegular, fontBold),
-              _pdfRow(context.tr('txt_store_address'), vendor?['store_address']?.toString() ?? 'N/A', fontRegular, fontBold),
-              _pdfRow(context.tr('txt_vendor'), vendor?['vendor_name']?.toString() ?? 'N/A', fontRegular, fontBold),
-              _pdfRow(context.tr('txt_contact'), vendor?['vendor_mobile']?.toString() ?? 'N/A', fontRegular, fontBold),
+              _pdfRow(
+                t('txt_store_name'),
+                vendor?['store_name']?.toString() ?? 'N/A',
+                fontRegular,
+                fontBold,
+              ),
+              _pdfRow(
+                t('txt_store_address'),
+                vendor?['store_address']?.toString() ?? 'N/A',
+                fontRegular,
+                fontBold,
+              ),
+              _pdfRow(
+                t('txt_vendor'),
+                vendor?['vendor_name']?.toString() ?? 'N/A',
+                fontRegular,
+                fontBold,
+              ),
+              _pdfRow(
+                t('txt_contact'),
+                vendor?['vendor_mobile']?.toString() ?? 'N/A',
+                fontRegular,
+                fontBold,
+              ),
               pw.SizedBox(height: 16),
               pw.Divider(color: PdfColors.grey300, thickness: 1),
               pw.SizedBox(height: 16),
 
-              // Order Information
-              _pdfSectionTitle(context.tr('txt_order_info'), fontBold),
+              _pdfSectionTitle(t('txt_order_info'), fontBold),
               pw.SizedBox(height: 10),
-              _pdfRow(context.tr('txt_order_id'), '#${order['order_id']}', fontRegular, fontBold),
-              _pdfRow(context.tr('txt_order_date'), _formatDateTime(order['created_at'] ?? order['createdAt']), fontRegular, fontBold),
-              _pdfRow(context.tr('txt_payment_method'), (order['payment_type']?.toString() ?? 'N/A').toUpperCase(), fontRegular, fontBold),
-              _pdfRow(context.tr('txt_delivery_type'), order['delivery_method'] == 'store_pickup' ? context.tr('title_store_pickup') : context.tr('txt_home_delivery'), fontRegular, fontBold),
+              _pdfRow(
+                t('txt_order_id'),
+                '#${order['order_id']}',
+                fontRegular,
+                fontBold,
+              ),
+              _pdfRow(
+                t('txt_order_date'),
+                _formatDateTime(order['created_at'] ?? order['createdAt']),
+                fontRegular,
+                fontBold,
+              ),
+              _pdfRow(
+                t('txt_payment_method'),
+                (order['payment_type']?.toString() ?? 'N/A').toUpperCase(),
+                fontRegular,
+                fontBold,
+              ),
+              _pdfRow(
+                t('txt_delivery_type'),
+                order['delivery_method'] == 'store_pickup'
+                    ? t('title_store_pickup')
+                    : t('txt_home_delivery'),
+                fontRegular,
+                fontBold,
+              ),
               if (order['delivery_method'] != 'store_pickup')
-                _pdfRow(context.tr('txt_delivery_address'), order['delivery_address']?.toString() ?? context.tr('txt_no_address_provided'), fontRegular, fontBold),
+                _pdfRow(
+                  t('txt_delivery_address'),
+                  order['delivery_address']?.toString() ??
+                      t('txt_no_address_provided'),
+                  fontRegular,
+                  fontBold,
+                ),
               pw.SizedBox(height: 16),
               pw.Divider(color: PdfColors.grey300, thickness: 1),
               pw.SizedBox(height: 16),
 
-              // Items
-              _pdfSectionTitle(context.tr('txt_orders_item'), fontBold),
+              _pdfSectionTitle(t('txt_orders_item'), fontBold),
               pw.SizedBox(height: 10),
               pw.Row(
                 children: [
-                  pw.Expanded(flex: 3, child: pw.Text(context.tr('txt_product'), style: pw.TextStyle(font: fontBold, fontSize: 11, fontWeight: pw.FontWeight.bold))),
-                  pw.Expanded(flex: 1, child: pw.Text(context.tr('txt_qty'), style: pw.TextStyle(font: fontBold, fontSize: 11, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center)),
-                  pw.Expanded(flex: 2, child: pw.Text(context.tr('txt_price'), style: pw.TextStyle(font: fontBold, fontSize: 11, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
+                  pw.Expanded(
+                    flex: 3,
+                    child: pw.Text(
+                      t('txt_product'),
+                      style: pw.TextStyle(
+                        font: fontBold,
+                        fontSize: 11,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  pw.Expanded(
+                    flex: 1,
+                    child: pw.Text(
+                      t('txt_qty'),
+                      style: pw.TextStyle(
+                        font: fontBold,
+                        fontSize: 11,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                      textAlign: pw.TextAlign.center,
+                    ),
+                  ),
+                  pw.Expanded(
+                    flex: 2,
+                    child: pw.Text(
+                      t('txt_price'),
+                      style: pw.TextStyle(
+                        font: fontBold,
+                        fontSize: 11,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                      textAlign: pw.TextAlign.right,
+                    ),
+                  ),
                 ],
               ),
               pw.SizedBox(height: 8),
+
               ...items.map((item) {
-                final hasVariant = item.variant != null && item.variant!.isNotEmpty;
+                final hasVariant =
+                    item.variant != null && item.variant!.isNotEmpty;
+
                 return pw.Column(
                   children: [
                     pw.Row(
@@ -309,13 +414,21 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                             children: [
                               pw.Text(
                                 item.productName,
-                                style: pw.TextStyle(font: fontRegular, fontSize: 11, fontWeight: pw.FontWeight.bold),
+                                style: pw.TextStyle(
+                                  font: fontRegular,
+                                  fontSize: 11,
+                                  fontWeight: pw.FontWeight.bold,
+                                ),
                               ),
                               if (hasVariant) ...[
                                 pw.SizedBox(height: 2),
                                 pw.Text(
                                   _getVariantDisplay(item.variant!),
-                                  style: pw.TextStyle(font: fontRegular, fontSize: 9, color: PdfColors.grey600),
+                                  style: pw.TextStyle(
+                                    font: fontRegular,
+                                    fontSize: 9,
+                                    color: PdfColors.grey600,
+                                  ),
                                 ),
                               ],
                             ],
@@ -325,7 +438,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           flex: 1,
                           child: pw.Text(
                             '${item.quantity}',
-                            style: pw.TextStyle(font: fontRegular, fontSize: 11),
+                            style: pw.TextStyle(
+                              font: fontRegular,
+                              fontSize: 11,
+                            ),
                             textAlign: pw.TextAlign.center,
                           ),
                         ),
@@ -333,7 +449,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           flex: 2,
                           child: pw.Text(
                             '${formatPrice(item.price)} c.',
-                            style: pw.TextStyle(font: fontRegular, fontSize: 11),
+                            style: pw.TextStyle(
+                              font: fontRegular,
+                              fontSize: 11,
+                            ),
                             textAlign: pw.TextAlign.right,
                           ),
                         ),
@@ -342,12 +461,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     pw.SizedBox(height: 6),
                   ],
                 );
-              }).toList(),
+              }),
+
               pw.SizedBox(height: 8),
               pw.Divider(color: PdfColors.grey300, thickness: 1),
               pw.SizedBox(height: 14),
 
-              // Subtotal and Total
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.end,
                 children: [
@@ -357,29 +476,61 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
                         pw.Row(
-                          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment:
+                          pw.MainAxisAlignment.spaceBetween,
                           children: [
-                            pw.Text('${context.tr('txt_subtotal')}:', style: pw.TextStyle(font: fontRegular, fontSize: 11)),
-                            pw.Text('${formatPrice(totalAmount)} c.', style: pw.TextStyle(font: fontRegular, fontSize: 11)),
+                            pw.Text(
+                              '${t('txt_subtotal')}:',
+                              style: pw.TextStyle(
+                                font: fontRegular,
+                                fontSize: 11,
+                              ),
+                            ),
+                            pw.Text(
+                              '${formatPrice(totalAmount)} c.',
+                              style: pw.TextStyle(
+                                font: fontRegular,
+                                fontSize: 11,
+                              ),
+                            ),
                           ],
                         ),
                         pw.SizedBox(height: 6),
                         pw.Row(
-                          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment:
+                          pw.MainAxisAlignment.spaceBetween,
                           children: [
-                            pw.Text('${context.tr('txt_shipping')}:', style: pw.TextStyle(font: fontRegular, fontSize: 11)),
-                            pw.Text('Free', style: pw.TextStyle(font: fontRegular, fontSize: 11, color: PdfColors.green700)),
+                            pw.Text(
+                              '${t('txt_shipping')}:',
+                              style: pw.TextStyle(
+                                font: fontRegular,
+                                fontSize: 11,
+                              ),
+                            ),
+                            pw.Text(
+                              'Free',
+                              style: pw.TextStyle(
+                                font: fontRegular,
+                                fontSize: 11,
+                                color: PdfColors.green700,
+                              ),
+                            ),
                           ],
                         ),
                         pw.SizedBox(height: 8),
                         pw.Divider(),
                         pw.SizedBox(height: 8),
                         pw.Row(
-                          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment:
+                          pw.MainAxisAlignment.spaceBetween,
                           children: [
                             pw.Text(
-                              context.tr('txt_total_caps'),
-                              style: pw.TextStyle(font: fontBold, fontSize: 14, fontWeight: pw.FontWeight.bold),
+                              t('txt_total_caps'),
+                              style: pw.TextStyle(
+                                font: fontBold,
+                                fontSize: 14,
+                                fontWeight: pw.FontWeight.bold,
+                              ),
                             ),
                             pw.Text(
                               '${formatPrice(totalAmount)} c.',
@@ -397,22 +548,29 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   ),
                 ],
               ),
-              pw.SizedBox(height: 36),
 
-              // Footer
+              pw.SizedBox(height: 36),
               pw.Divider(color: PdfColors.grey300, thickness: 1),
               pw.SizedBox(height: 16),
               pw.Center(
                 child: pw.Text(
-                  context.tr('thanks_for_shopping'),
-                  style: pw.TextStyle(font: fontRegular, fontSize: 12, color: PdfColors.grey600),
+                  t('thanks_for_shopping'),
+                  style: pw.TextStyle(
+                    font: fontRegular,
+                    fontSize: 12,
+                    color: PdfColors.grey600,
+                  ),
                 ),
               ),
               pw.SizedBox(height: 8),
               pw.Center(
                 child: pw.Text(
-                  context.tr('for_queries_contact'),
-                  style: pw.TextStyle(font: fontRegular, fontSize: 10, color: PdfColors.grey500),
+                  t('for_queries_contact'),
+                  style: pw.TextStyle(
+                    font: fontRegular,
+                    fontSize: 10,
+                    color: PdfColors.grey500,
+                  ),
                 ),
               ),
             ],
@@ -424,7 +582,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final bytes = await pdf.save();
     final tempDir = await getTemporaryDirectory();
 
-    // Create unique filename with order ID and timestamp
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final fileName = 'receipt_order_${orderId}_$timestamp.pdf';
     final file = File('${tempDir.path}/$fileName');
@@ -438,13 +595,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.receipt, size: 48, color: Color(0xFF22C55E)),
+              const Icon(
+                Icons.receipt,
+                size: 48,
+                color: Color(0xFF22C55E),
+              ),
               const SizedBox(height: 12),
               Text('${context.tr('txt_receipt_for_order')} #$orderId'),
               const SizedBox(height: 8),
               Text(
                 context.tr('receipt_generate_success'),
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -468,6 +632,92 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         ),
       );
     }
+  }
+
+  Widget _buildChatButton(Map<String, dynamic>? vendor, List<OrderItemModel> items) {
+    if (vendor == null || items.isEmpty) return const SizedBox.shrink();
+
+    final firstItem = items.first;
+
+    final int? vendorId = int.tryParse(
+      (vendor['vendor_id'] ?? vendor['id'] ?? vendor['user_id']).toString(),
+    );
+
+    if (vendorId == null) return const SizedBox.shrink();
+
+    final String vendorName =
+        vendor['vendor_name']?.toString() ??
+            vendor['store_name']?.toString() ??
+            'Vendor';
+
+    final String vendorImage = vendor['vendor_image']?.toString() ??
+        vendor['image']?.toString() ??
+        vendor['logo']?.toString() ??
+        '';
+
+    return GestureDetector(
+      onTap: () async {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => const Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+
+        final conversationId = await ChatService.startConversation(
+          otherUserId: vendorId,
+          productId: firstItem.productId,
+        );
+
+        if (mounted) Navigator.pop(context);
+
+        if (conversationId != null && mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ChatDetailScreen(
+                productimage:
+                "${ApiService.ImagebaseUrl}/${ApiService.product_images_URL}${firstItem.image}",
+                productname: firstItem.productName,
+                name: vendorName,
+                image:
+                "${ApiService.ImagebaseUrl}/${ApiService.profile_image_URL}$vendorImage",
+                conversationId: conversationId,
+              ),
+            ),
+          );
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF3B82F6), width: 1.5),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.message,
+              color: Color(0xFF3B82F6),
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              context.tr('txt_chat_with_vendor'),
+              style: const TextStyle(
+                color: Color(0xFF3B82F6),
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   pw.Widget _pdfRow(String label, String value, pw.Font regularFont, pw.Font boldFont) => pw.Padding(
@@ -525,7 +775,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          "${context.tr('txt_order')} #${widget.orderId}",
+          "${context.trRead('txt_order')} #${widget.orderId}",
           style: const TextStyle(
             color: Colors.black87,
             fontSize: 17,
@@ -616,6 +866,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 const SizedBox(height: 12),
                 _buildStoreCard(vendor),
                 const SizedBox(height: 12),
+                _buildChatButton(vendor, items),
+                const SizedBox(height: 12),
                 _buildInfoCard(paymentType, deliveryAddress, deliveryMethod),
                 const SizedBox(height: 12),
                 _buildDeliveryCard(deliveryMethod),
@@ -684,7 +936,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ),
               const Spacer(),
               Text(
-                "${context.tr('txt_order')} #$orderId",
+                "${context.trRead('txt_order')} #$orderId",
                 style: const TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 15,

@@ -108,16 +108,13 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
   }
 
   void _selectSubCategory(int subCategoryId, String subCategoryName) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AllProductsScreen(
-          initialCategoryId: selectedCategoryId,
-          initialSubCategoryId: subCategoryId,
-          categoryName: subCategoryName,
-        ),
-      ),
-    );
+    setState(() {
+      selectedSubCategoryId = subCategoryId;
+      selectedChildCategoryId = null;
+      isCategoryExpanded = false;
+    });
+
+    _fetchProducts();
   }
 
   void _selectChildCategory(int childCategoryId) {
@@ -144,19 +141,14 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
 
 
   List<SubCategoryModel> get _visibleSubCategories {
-    if (selectedCategoryId != null && selectedSubCategoryId == null && categories.isNotEmpty) {
+    if (selectedCategoryId != null && categories.isNotEmpty) {
       try {
         final category = categories.firstWhere(
               (c) => c.id == selectedCategoryId,
           orElse: () => categories.first,
         );
-        return isCategoryExpanded
-            ? category.subCategories
-            : (category.subCategories.length > 5
-            ? category.subCategories.take(5).toList()
-            : category.subCategories);
+        return category.subCategories;
       } catch (e) {
-        debugPrint('Error getting subcategories: $e');
         return [];
       }
     }
@@ -164,21 +156,19 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
   }
 
   List<ChildCategoryModel> get _visibleChildCategories {
-    if (selectedSubCategoryId != null && categories.isNotEmpty) {
+    if (selectedCategoryId != null &&
+        selectedSubCategoryId != null &&
+        categories.isNotEmpty) {
       try {
         final category = categories.firstWhere(
               (c) => c.id == selectedCategoryId,
-          orElse: () => categories.first,
         );
+
         final subCategory = category.subCategories.firstWhere(
               (s) => s.id == selectedSubCategoryId,
-          orElse: () => category.subCategories.first,
         );
-        return isCategoryExpanded
-            ? subCategory.childCategories
-            : (subCategory.childCategories.length > 5
-            ? subCategory.childCategories.take(5).toList()
-            : subCategory.childCategories);
+
+        return subCategory.childCategories;
       } catch (e) {
         debugPrint('Error getting child categories: $e');
         return [];
@@ -289,11 +279,13 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
           //     _visibleChildCategories.isNotEmpty)
           //   _buildChildCategoryGrid(),
 
-          if (selectedCategoryId != null &&
-              selectedSubCategoryId == null)
+          if (selectedCategoryId != null)
             _buildSubCategoryList(),
-
-          if (selectedSubCategoryId != null)
+          SliverToBoxAdapter(
+            child: SizedBox(height: 8,),
+          ),
+          if (selectedSubCategoryId != null &&
+              _visibleChildCategories.isNotEmpty)
             _buildChildCategoryList(),
 
           /// DIVIDER BEFORE PRODUCTS
@@ -454,55 +446,28 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
       ),
     );
   }
+
   Widget _buildSubCategoryList() {
     final subCategories = _visibleSubCategories;
 
     return SliverToBoxAdapter(
-      child: SizedBox(
-        height: 50,
-        child: ListView.builder(
+      child: Container(
+        color: Colors.white,
+        height: 62,
+        padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
+        child: ListView.separated(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 6),
           itemCount: subCategories.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 10),
           itemBuilder: (context, index) {
             final item = subCategories[index];
 
-            return Padding(
-              padding: const EdgeInsets.only(right: 6),
-              child: _buildChipCard(
-                name: item.name,
-                image: item.image,
-                onTap: () =>
-                    _selectSubCategory(item.id, item.name),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }Widget _buildChildCategoryList() {
-    final childCategories = _visibleChildCategories;
-
-    return SliverToBoxAdapter(
-      child: SizedBox(
-        height: 70,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: childCategories.length,
-          itemBuilder: (context, index) {
-            final item = childCategories[index];
-            final isSelected =
-                selectedChildCategoryId == item.id;
-
-            return Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: _buildChipCard(
-                name: item.name,
-                image: item.image,
-                isSelected: isSelected,
-                onTap: () => _selectChildCategory(item.id),
-              ),
+            return _buildCategoryPill(
+              name: item.name,
+              image: item.image,
+              isSelected: selectedSubCategoryId == item.id,
+              showImage: true,
+              onTap: () => _selectSubCategory(item.id, item.name),
             );
           },
         ),
@@ -510,11 +475,161 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
     );
   }
 
+
+  Widget _buildChildCategoryList() {
+    final childCategories = _visibleChildCategories;
+    final bool showTwoLines = childCategories.length > 2;
+
+    final firstRow = <ChildCategoryModel>[];
+    final secondRow = <ChildCategoryModel>[];
+
+    for (int i = 0; i < childCategories.length; i++) {
+      if (i.isEven) {
+        firstRow.add(childCategories[i]);
+      } else {
+        secondRow.add(childCategories[i]);
+      }
+    }
+
+    Widget buildRow(List<ChildCategoryModel> items) {
+      return Row(
+        children: items.map((item) {
+          return Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: _buildCategoryPill(
+              name: item.name,
+              image: '',
+              isSelected: selectedChildCategoryId == item.id,
+              showImage: false,
+              onTap: () => _selectChildCategory(item.id),
+            ),
+          );
+        }).toList(),
+      );
+    }
+
+    return SliverToBoxAdapter(
+      child: Container(
+        color: Colors.white,
+        height: showTwoLines ? 82 : 42,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: showTwoLines
+              ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              buildRow(firstRow),
+              const SizedBox(height: 8),
+              buildRow(secondRow),
+            ],
+          )
+              : buildRow(childCategories),
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildCategoryPill({
+    required String name,
+    required String image,
+    required bool isSelected,
+    required bool showImage,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        height: 30,
+        padding: EdgeInsets.symmetric(
+          horizontal: showImage ? 8 : 16,
+        ),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF0B7CFF) : const Color(0xFFF4F4F6),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showImage) ...[
+              Container(
+                height: 28,
+                width: 28,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFFFFC94A),
+                ),
+                child: ClipOval(
+                  child: Image.network(
+                    "${ApiService.ImagebaseUrl}${ApiService.subcategory_images_URL}$image",
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              name,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? Colors.white : Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  // Widget _buildChildCategoryList() {
+  //   final childCategories = _visibleChildCategories;
+  //   final bool showTwoLines = childCategories.length > 2;
+  //
+  //   final double itemHeight = 40;
+  //   final double spacing = 10;
+  //
+  //   return SliverToBoxAdapter(
+  //     child: Container(
+  //       color: Colors.white,
+  //
+  //       // ✅ PERFECT HEIGHT CALCULATION
+  //       height: showTwoLines
+  //           ? (itemHeight * 2) + spacing + 16 // top + bottom padding
+  //           : itemHeight + 16,
+  //
+  //       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+  //
+  //       child: SingleChildScrollView(
+  //         scrollDirection: Axis.horizontal,
+  //         child: Wrap(
+  //           direction: Axis.vertical,
+  //           spacing: showTwoLines ? spacing : 0,
+  //           runSpacing: spacing,
+  //           alignment: WrapAlignment.start,
+  //           children: childCategories.map((item) {
+  //             return _buildCategoryPill(
+  //               name: item.name,
+  //               image: '',
+  //               isSelected: selectedChildCategoryId == item.id,
+  //               showImage: false,
+  //               onTap: () => _selectChildCategory(item.id),
+  //             );
+  //           }).toList(),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
   Widget _buildChipCard({
     required String name,
     required String image,
     required VoidCallback onTap,
-    bool isSelected = false,
+    required bool isSelected, // 👈 add this
   }) {
     return InkWell(
       onTap: onTap,
@@ -522,21 +637,17 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.green.shade300 : Colors.grey.shade200,
+          color: isSelected ? Colors.black : Colors.grey.shade200, // ✅ BLACK
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(
-            color: isSelected
-                ? Colors.green
-                : Colors.transparent,
-          ),
         ),
         child: Row(
           children: [
+
             /// IMAGE
             Container(
               height: 40,
               width: 40,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white,
               ),
@@ -544,11 +655,6 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
                 child: Image.network(
                   "${ApiService.ImagebaseUrl}${ApiService.subcategory_images_URL}$image",
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Icon(
-                    Icons.image,
-                    size: 20,
-                    color: Colors.grey[400],
-                  ),
                 ),
               ),
             ),
@@ -561,9 +667,7 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: isSelected
-                    ? Colors.green.shade800
-                    : Colors.black87,
+                color: isSelected ? Colors.white : Colors.black87, // ✅ WHITE TEXT
               ),
             ),
           ],
@@ -571,6 +675,7 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
       ),
     );
   }
+
   Widget _buildChildCategoryGrid() {
     final childCategories = _visibleChildCategories;
 

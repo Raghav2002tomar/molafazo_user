@@ -3,7 +3,9 @@ import 'package:ecom/screens/bottombar/widget/product_card_widget.dart';
 import 'package:ecom/screens/bottombar/widget/store_card_widget.dart';
 import 'package:ecom/services/api_service.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 import '../cart/controller/cart_services.dart';
 import '../product/all_products_screen.dart';
@@ -20,6 +22,7 @@ import 'controller/category_service.dart';
 import 'controller/product_services.dart';
 
 import 'controller/store_services.dart';
+import 'delivery_filter_screen.dart';
 import 'model/Banner_Model.dart';
 import 'model/category_model.dart';
 import 'model/product_model.dart';
@@ -41,26 +44,84 @@ class _HomeScreenState extends State<HomeScreen> {
   final ValueNotifier<bool> isLoading = ValueNotifier(true);
   int? selectedCityId;
   String? selectedCity;
+  String? deliveryCity;
+  String? deliveryType;
+  int? deliveryTimeValue;
+  String? deliveryTimeUnit;
+  bool showDeliveryFilterWidget = false;
+
   @override
   void initState() {
     super.initState();
-    loadCity();
-    _fetchAllProducts();
+    loadSavedFilters();
+
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   _showCityGuide();
+    // });
   }
 
-  void loadCity() async {
+  Future<void> _openCityScreen() async {
+    if (!mounted) return;
 
-    final data = await CityStorage.getCity();
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const CitySearchScreen(),
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        selectedCityId = result["id"];
+        selectedCity = result["name"];
+        deliveryCity = result["delivery_city"];
+        deliveryType = result["delivery_type"];
+        deliveryTimeValue = result["delivery_time_value"];
+        deliveryTimeUnit = result["delivery_time_unit"];
+      });
+
+      _fetchAllProducts();
+    } else {
+      final hasCity =
+          (selectedCity != null && selectedCity!.isNotEmpty) ||
+              (deliveryCity != null && deliveryCity!.isNotEmpty);
+
+      if (!hasCity && mounted) {
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) _openCityScreen();
+        });
+      }
+    }
+  }
+
+  Future<void> loadSavedFilters() async {
+    final cityData = await CityStorage.getCity();
+    final deliveryData = await CityStorage.getDeliveryFilter();
 
     setState(() {
-      selectedCityId = data["id"];
-      selectedCity = data["name"];
+      selectedCityId = cityData["id"];
+      selectedCity = cityData["name"];
+
+      deliveryCity = deliveryData["delivery_city"];
+      deliveryType = deliveryData["delivery_type"];
+      deliveryTimeValue = deliveryData["delivery_time_value"];
+      deliveryTimeUnit = deliveryData["delivery_time_unit"];
     });
 
     _fetchAllProducts();
-  }
-  void removeCity() async {
 
+    final hasCity =
+        (selectedCity != null && selectedCity!.isNotEmpty) ||
+            (deliveryCity != null && deliveryCity!.isNotEmpty);
+
+    if (!hasCity) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _openCityScreen();
+      });
+    }
+  }
+
+  void removeCity() async {
     await CityStorage.removeCity();
 
     setState(() {
@@ -68,59 +129,50 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     _fetchAllProducts();
-
-
   }
 
   /// Fetch all products initially
   Future<void> _fetchAllProducts() async {
-
     try {
-
       isLoading.value = true;
 
       final result = await ProductService.fetchAllProducts(
-        cityId: selectedCityId?.toString(),
+        deliveryCity: selectedCity,
+        deliveryType: deliveryType,
+        deliveryTimeValue: deliveryTimeValue,
+        deliveryTimeUnit: deliveryTimeUnit,
       );
 
       products.value = result;
-
     } catch (e) {
-
       products.value = [];
       debugPrint("Error fetching products: $e");
-
     } finally {
-
       isLoading.value = false;
-
     }
   }
+
   /// Fetch filtered products when category/subcategory/child selected
   Future<void> _fetchFilteredProducts() async {
-
     try {
-
       isLoading.value = true;
 
       final result = await ProductService.fetchProducts(
         categoryId: selectedCategoryId.value,
         subCategoryId: selectedSubCategoryId.value,
         childCategoryId: selectedChildCategoryId.value,
-        city: selectedCity,
+        deliveryCity: deliveryCity,
+        deliveryType: deliveryType,
+        deliveryTimeValue: deliveryTimeValue,
+        deliveryTimeUnit: deliveryTimeUnit,
       );
 
       products.value = result;
-
     } catch (e) {
-
       products.value = [];
       debugPrint("Error fetching filtered products: $e");
-
     } finally {
-
       isLoading.value = false;
-
     }
   }
 
@@ -130,6 +182,12 @@ class _HomeScreenState extends State<HomeScreen> {
     selectedSubCategoryId.value = null;
     selectedChildCategoryId.value = null;
     _fetchAllProducts();
+  }
+
+  void openDeliveryFilter() {
+    setState(() {
+      showDeliveryFilterWidget = !showDeliveryFilterWidget;
+    });
   }
 
   @override
@@ -159,33 +217,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
                     child: Column(
                       children: [
-
                         /// 📍 LOCATION ROW
                         Material(
                           color: Colors.transparent,
                           child: InkWell(
                             borderRadius: BorderRadius.circular(8),
-                            onTap: () async {
-                              final result = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const CitySearchScreen(),
-                                ),
-                              );
-
-                              if (result != null) {
-
-                                setState(() {
-                                  selectedCityId = result["id"];
-                                  selectedCity = result["name"];
-                                });
-
-                                if (selectedCityId == null) {
-                                  _fetchAllProducts(); // show all cities products
-                                } else {
-                                  _fetchFilteredProducts(); // filter by city
-                                }
-                              }
+                            onTap:()  {
+                              _openCityScreen();
                             },
                             child: Row(
                               children: [
@@ -198,34 +236,48 @@ class _HomeScreenState extends State<HomeScreen> {
                                 const SizedBox(width: 6),
 
                                 Text(
-                                  selectedCity ?? context.tr('txt_all_cities')
-,                                  overflow: TextOverflow.ellipsis,
+                                  deliveryCity != null
+                                      ? '$deliveryCity  '
+                                      : selectedCity ??
+                                            context.tr('txt_all_cities'),
+                                  overflow: TextOverflow.ellipsis,
                                   style: tt.bodyMedium?.copyWith(
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
 
                                 /// ❌ CLEAR LOCATION BUTTON
-                                if (selectedCity != null)
-                                  GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        selectedCityId = null;
-                                        selectedCity = null;
-                                        removeCity();
-                                      });
-
-                                      _fetchFilteredProducts();
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                                      child: Icon(
-                                        Icons.close,
-                                        size: 18,
-                                        color: cs.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ),
+                                // if ((deliveryCity != null &&
+                                //         deliveryCity!.isNotEmpty) ||
+                                //     selectedCity != null)
+                                //   GestureDetector(
+                                //     onTap: () async {
+                                //       await CityStorage.removeCity();
+                                //       await CityStorage.clearDeliveryFilter();
+                                //
+                                //       setState(() {
+                                //         selectedCityId = null;
+                                //         selectedCity = null;
+                                //
+                                //         deliveryCity = null;
+                                //         deliveryType = null;
+                                //         deliveryTimeValue = null;
+                                //         deliveryTimeUnit = null;
+                                //       });
+                                //
+                                //       _fetchAllProducts();
+                                //     },
+                                //     child: Padding(
+                                //       padding: const EdgeInsets.symmetric(
+                                //         horizontal: 4,
+                                //       ),
+                                //       child: Icon(
+                                //         Icons.close,
+                                //         size: 18,
+                                //         color: cs.onSurfaceVariant,
+                                //       ),
+                                //     ),
+                                //   ),
 
                                 /// ⌄ Dropdown Icon
                                 Icon(
@@ -236,28 +288,42 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                           ),
-                        ),                        const SizedBox(height: 10),
+                        ),
+                        const SizedBox(height: 10),
 
                         /// 🔍 SEARCH + MENU
                         Row(
                           children: [
-
                             Expanded(
-                              child: InkWell(onTap: (){
-                                Navigator.push(context, MaterialPageRoute(builder: (context)=>ProductSearchScreen()));
-                              },
+                              child: InkWell(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          ProductSearchScreen(),
+                                    ),
+                                  );
+                                },
                                 child: Container(
                                   height: 44,
-                                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: cs.surfaceContainerHighest,
                                     borderRadius: BorderRadius.circular(30),
-                                    border: Border.all(color: cs.outlineVariant),
+                                    border: Border.all(
+                                      color: cs.outlineVariant,
+                                    ),
                                   ),
                                   child: Row(
                                     children: [
-                                      Icon(Icons.search,
-                                          size: 20, color: cs.onSurfaceVariant),
+                                      Icon(
+                                        Icons.search,
+                                        size: 20,
+                                        color: cs.onSurfaceVariant,
+                                      ),
                                       const SizedBox(width: 8),
                                       Text(
                                         context.tr('txt_search_products'),
@@ -273,24 +339,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
                             const SizedBox(width: 10),
 
-                            InkWell(onTap: (){
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => BottomNavWrapper(
-                                    currentIndex: 1, // Shop tab
-                                    onTap: (index) {
-                                      // Handle tab change - navigate to appropriate screen
-                                      Navigator.pop(context);
-                                      // Then change tab in main bottom nav
-                                    },
-                                    child: AllProductsScreen(
-                                      // initialCategoryId: categoryId,
-                                      // categoryName: categoryName,
+                            InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => BottomNavWrapper(
+                                      currentIndex: 1, // Shop tab
+                                      onTap: (index) {
+                                        // Handle tab change - navigate to appropriate screen
+                                        Navigator.pop(context);
+                                        // Then change tab in main bottom nav
+                                      },
+                                      child: AllProductsScreen(
+                                        // initialCategoryId: categoryId,
+                                        // categoryName: categoryName,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              );                            },
+                                );
+                              },
                               child: Container(
                                 height: 44,
                                 width: 44,
@@ -317,9 +385,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: SizedBox(
                 height: 200, // 🔥 Bigger banner
                 child: FutureBuilder<List<BannerModel>>(
-                  future: BannerService.fetchBanners(
-                    city: selectedCity,
-                  ),
+                  future: BannerService.fetchBanners(city: selectedCity),
                   builder: (_, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const _PromoBannerShimmer();
@@ -331,10 +397,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     return _AutoBannerSlider(banners: snapshot.data!);
                   },
-                )
+                ),
               ),
             ),
-
 
             const SliverToBoxAdapter(child: SizedBox(height: 8)),
 
@@ -369,11 +434,100 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
 
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: InkWell(
+                  onTap: openDeliveryFilter,
+                  borderRadius: BorderRadius.circular(24),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.filter_alt, size: 18, color: Colors.black),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            deliveryType != null
+                                ? '${deliveryType == 'courier' ? context.tr('txt_delivery_door') : context.tr('txt_delivery_taxi')} • ${deliveryTimeUnit == 'day' ? context.tr('txt_1_day') : '$deliveryTimeValue ${context.tr('txt_hours')}'}'
+                                : context.tr('txt_filters'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        if (deliveryType != null)
+                          GestureDetector(
+                            onTap: () async {
+                              await CityStorage.clearDeliveryFilter();
 
+                              setState(() {
+                                deliveryType = null;
+                                deliveryTimeValue = null;
+                                deliveryTimeUnit = null;
+                                showDeliveryFilterWidget = false;
+                              });
+
+                              _fetchAllProducts();
+                            },
+                            child: Icon(
+                              Icons.close,
+                              size: 18,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            if (showDeliveryFilterWidget)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  child: DeliveryFilterScreen(
+                    initialDeliveryType: deliveryType,
+                    initialTimeValue: deliveryTimeValue,
+                    initialTimeUnit: deliveryTimeUnit,
+    onApply: (result) async {
+    await CityStorage.saveDeliveryFilter(
+    city: selectedCity ?? '',
+    deliveryType: result["delivery_type"],
+    deliveryTimeValue: result["delivery_time_value"],
+    deliveryTimeUnit: result["delivery_time_unit"],
+    );
+
+    setState(() {
+    deliveryCity = selectedCity;
+    deliveryType = result["delivery_type"];
+    deliveryTimeValue = result["delivery_time_value"];
+    deliveryTimeUnit = result["delivery_time_unit"];
+    showDeliveryFilterWidget = false;
+    });
+
+    _fetchAllProducts();
+    },
+                    onClose: () {
+                      setState(() {
+                        showDeliveryFilterWidget = false;
+                      });
+                    },
+                  ),
+                ),
+              ),
             const SliverToBoxAdapter(child: SizedBox(height: 12)),
 
             /// PRODUCTS SECTION HEADER
-
 
             /// PRODUCTS GRID
             ValueListenableBuilder<bool>(
@@ -408,25 +562,33 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     }
 
-                     return SliverPadding(
+                    return SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       sliver: SliverGrid(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 10,
-                          crossAxisSpacing: 10,
-                          childAspectRatio: 0.55,
-                        ),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              mainAxisSpacing: 10,
+                              crossAxisSpacing: 10,
+                              childAspectRatio: 0.55,
+                            ),
                         delegate: SliverChildBuilderDelegate(
-                              (_, i) => ProductCardWidget(product: list[i], onTap: (){
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => ProductDetailScreen(productId: list[i].id),
+                          (_, i) => ProductCardWidget(
+                            product: list[i],
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ProductDetailScreen(
+                                    productId: list[i].id,
                                   ),
-                                );
-                              },),
-                          childCount: list.length >= 6 ?  6: list.length, // SAFE LIMIT
+                                ),
+                              );
+                            },
+                          ),
+                          childCount: list.length >= 6
+                              ? 6
+                              : list.length, // SAFE LIMIT
                         ),
                       ),
                     );
@@ -459,14 +621,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => AllStoresScreen(
-                              city: selectedCity,
-                            ),
+                            builder: (_) => AllStoresScreen(city: selectedCity),
                           ),
                         );
                       },
                       child: Text(context.tr('txt_view_all')),
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -475,7 +635,12 @@ class _HomeScreenState extends State<HomeScreen> {
             /// STORES LIST
             // ── STORES VERTICAL LIST ─────────────────────────────────────
             FutureBuilder<List<StoreModel>>(
-              future: StoreService.fetchStores(city: selectedCity),
+              future: StoreService.fetchStores(
+                deliveryCity: selectedCity,
+                deliveryType: deliveryType,
+                deliveryTimeValue: deliveryTimeValue,
+                deliveryTimeUnit: deliveryTimeUnit,
+              ),
               builder: (context, snapshot) {
                 // Loading shimmer
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -483,7 +648,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
-                            (_, __) => Padding(
+                        (_, __) => Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: Shimmer.fromColors(
                             baseColor: Colors.grey.shade300,
@@ -511,15 +676,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Center(
                         child: Column(
                           children: [
-                            Icon(Icons.storefront_outlined,
-                                size: 48, color: Colors.grey.shade400),
+                            Icon(
+                              Icons.storefront_outlined,
+                              size: 48,
+                              color: Colors.grey.shade400,
+                            ),
                             const SizedBox(height: 8),
                             Text(
                               selectedCity == null
                                   ? context.tr('txt_no_stores_available')
                                   : "${context.tr('txt_no_store_found')} $selectedCity",
-                              style:
-                              TextStyle(color: Colors.grey.shade600),
+                              style: TextStyle(color: Colors.grey.shade600),
                             ),
                           ],
                         ),
@@ -536,7 +703,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
-                          (_, i) => Padding(
+                      (_, i) => Padding(
                         padding: const EdgeInsets.only(bottom: 16),
                         child: StoreCardWidget(
                           store: limited[i],
@@ -570,7 +737,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                             );
-
                           },
                         ),
                       ),
@@ -1036,7 +1202,7 @@ class _AutoBannerSliderState extends State<_AutoBannerSlider> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
             widget.banners.length,
-                (index) => AnimatedContainer(
+            (index) => AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               margin: const EdgeInsets.symmetric(horizontal: 4),
               height: 6,
@@ -1054,17 +1220,21 @@ class _AutoBannerSliderState extends State<_AutoBannerSlider> {
     );
   }
 }
+
 class _BigPromoCard extends StatelessWidget {
   final BannerModel banner;
   const _BigPromoCard({required this.banner});
 
   void _handleTap(BuildContext context) {
-    if (banner.type == null || banner.linkedData == null || banner.linkedData!.isEmpty) {
+    if (banner.type == null ||
+        banner.linkedData == null ||
+        banner.linkedData!.isEmpty) {
       return;
     }
 
     // Randomly select an ID from the list
-    final random = DateTime.now().millisecondsSinceEpoch % banner.linkedData!.length;
+    final random =
+        DateTime.now().millisecondsSinceEpoch % banner.linkedData!.length;
     final selectedId = banner.linkedData![random];
 
     if (banner.type == "product") {
@@ -1106,7 +1276,6 @@ class _BigPromoCard extends StatelessWidget {
           ),
         ),
       );
-
     }
   }
 
@@ -1141,8 +1310,10 @@ class _BigPromoCard extends StatelessWidget {
                     child: Container(color: Colors.grey),
                   );
                 },
-                errorBuilder: (_, __, ___) =>
-                    Image.asset("assets/images/banner_error.png", fit: BoxFit.cover),
+                errorBuilder: (_, __, ___) => Image.asset(
+                  "assets/images/banner_error.png",
+                  fit: BoxFit.cover,
+                ),
               ),
               // Optional: Add title overlay
               if (banner.title != null)

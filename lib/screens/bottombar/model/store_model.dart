@@ -25,6 +25,7 @@ class StoreModel {
   final String backgroundColor;
   final List<String> governmentId;
   final List<ProductModel>? products;
+  final List<DeliveryConfigModel> deliveryConfig;
 
   StoreModel({
     required this.id,
@@ -49,6 +50,7 @@ class StoreModel {
     required this.governmentId,
     required this.backgroundColor,
     this.products,
+    required this.deliveryConfig,
 
   });
 
@@ -76,8 +78,37 @@ class StoreModel {
       updatedAt: json['updated_at']?.toString() ?? '',
       governmentId: _parseGovernmentId(json['government_id']),
       products: _parseProducts(json['products']),
+      deliveryConfig: _parseDeliveryConfig(json['delivery_config']),
 
     );
+  }
+  static List<DeliveryConfigModel> _parseDeliveryConfig(dynamic raw) {
+    if (raw == null) return [];
+
+    if (raw is List) {
+      return raw
+          .whereType<Map>()
+          .map((e) => DeliveryConfigModel.fromJson(
+        Map<String, dynamic>.from(e),
+      ))
+          .toList();
+    }
+
+    if (raw is String) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          return decoded
+              .whereType<Map>()
+              .map((e) => DeliveryConfigModel.fromJson(
+            Map<String, dynamic>.from(e),
+          ))
+              .toList();
+        }
+      } catch (_) {}
+    }
+
+    return [];
   }
   /// Parses the nested products array from the store JSON.
   static List<ProductModel>? _parseProducts(dynamic raw) {
@@ -130,5 +161,38 @@ class StoreModel {
       }
     }
     return [];
+  }
+}
+
+class DeliveryConfigModel {
+  final String city;
+  final bool enabled;
+  final String deliveryType; // courier / taxi
+  final int deliveryTimeValue;
+  final String deliveryTimeUnit; // hours / day
+  final String description;
+
+  DeliveryConfigModel({
+    required this.city,
+    required this.enabled,
+    required this.deliveryType,
+    required this.deliveryTimeValue,
+    required this.deliveryTimeUnit,
+    required this.description,
+  });
+
+  factory DeliveryConfigModel.fromJson(Map<String, dynamic> json) {
+    return DeliveryConfigModel(
+      city: json['city']?.toString() ?? '',
+      enabled: json['enabled']?.toString() == '1' ||
+          json['enabled'] == true,
+      deliveryType: json['delivery_type']?.toString() ?? 'courier',
+      deliveryTimeValue: int.tryParse(
+        json['delivery_time_value']?.toString() ?? '3',
+      ) ??
+          3,
+      deliveryTimeUnit: json['delivery_time_unit']?.toString() ?? 'hours',
+      description: json['description']?.toString() ?? '',
+    );
   }
 }

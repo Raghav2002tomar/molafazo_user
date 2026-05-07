@@ -213,6 +213,7 @@ class Store {
   final String? type;
   final User? user; // User details including payment modes
   final List<VendorBank>? vendorBanks; // Vendor's bank accounts
+  final List<DeliveryConfigModel> deliveryConfig;
 
   Store({
     required this.id,
@@ -237,9 +238,34 @@ class Store {
     this.type,
     this.user,
     this.vendorBanks,
+    this.deliveryConfig = const [],
   });
+  static List<DeliveryConfigModel> _parseDeliveryConfig(dynamic raw) {
+    if (raw == null) return [];
 
+    if (raw is List) {
+      return raw
+          .whereType<Map>()
+          .map((e) => DeliveryConfigModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+
+    if (raw is String && raw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          return decoded
+              .whereType<Map>()
+              .map((e) => DeliveryConfigModel.fromJson(Map<String, dynamic>.from(e)))
+              .toList();
+        }
+      } catch (_) {}
+    }
+
+    return [];
+  }
   factory Store.fromJson(Map<String, dynamic> json) {
+
     return Store(
       id: json['id'] ?? 0,
       userId: json['user_id'] ?? 0,
@@ -265,9 +291,11 @@ class Store {
       vendorBanks: json['vendor_banks'] != null
           ? (json['vendor_banks'] as List).map((vb) => VendorBank.fromJson(vb)).toList()
           : null,
+      deliveryConfig: _parseDeliveryConfig(json['delivery_config']),
     );
   }
 }
+
 
 class User {
   final int id;
@@ -429,46 +457,6 @@ class Bank {
   }
 }
 
-// class VendorBank {
-//   final int id;
-//   final int userId;
-//   final int bankId;
-//   final String accountHolderName;
-//   final String accountNumber;
-//   final String createdAt;
-//   final String updatedAt;
-//   final Bank? bank; // Bank details
-//
-//   VendorBank({
-//     required this.id,
-//     required this.userId,
-//     required this.bankId,
-//     required this.accountHolderName,
-//     required this.accountNumber,
-//     required this.createdAt,
-//     required this.updatedAt,
-//     this.bank,
-//   });
-//
-//   factory VendorBank.fromJson(Map<String, dynamic> json) {
-//     return VendorBank(
-//       id: json['id'] ?? 0,
-//       userId: json['user_id'] ?? 0,
-//       bankId: json['bank_id'] ?? 0,
-//       accountHolderName: json['account_holder_name'] ?? '',
-//       accountNumber: json['account_number'] ?? '',
-//       createdAt: json['created_at'] ?? '',
-//       updatedAt: json['updated_at'] ?? '',
-//       bank: json['bank'] != null ? Bank.fromJson(json['bank']) : null,
-//     );
-//   }
-//
-//   // Helper method to get bank name
-//   String get bankName => bank?.name ?? 'Bank';
-//
-//   // Helper method to get bank logo
-//   String? get bankLogo => bank?.logo;
-// }
 
 // Extension to get payment modes from cart items
 extension CartPaymentModes on CartData {
@@ -515,5 +503,37 @@ extension CartPaymentModes on CartData {
   String? getVendorName() {
     if (!isSingleVendor()) return null;
     return items.first.product.store?.name;
+  }
+}
+
+class DeliveryConfigModel {
+  final String city;
+  final bool enabled;
+  final String deliveryType;
+  final int deliveryTimeValue;
+  final String deliveryTimeUnit;
+  final String description;
+
+  DeliveryConfigModel({
+    required this.city,
+    required this.enabled,
+    required this.deliveryType,
+    required this.deliveryTimeValue,
+    required this.deliveryTimeUnit,
+    required this.description,
+  });
+
+  factory DeliveryConfigModel.fromJson(Map<String, dynamic> json) {
+    return DeliveryConfigModel(
+      city: json['city']?.toString() ?? '',
+      enabled: json['enabled'] == true ||
+          json['enabled'] == 1 ||
+          json['enabled']?.toString() == '1' ||
+          json['enabled']?.toString().toLowerCase() == 'true',
+      deliveryType: json['delivery_type']?.toString() ?? 'courier',
+      deliveryTimeValue: int.tryParse(json['delivery_time_value']?.toString() ?? '3') ?? 3,
+      deliveryTimeUnit: json['delivery_time_unit']?.toString() ?? 'hours',
+      description: json['description']?.toString() ?? '',
+    );
   }
 }

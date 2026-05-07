@@ -1,3 +1,4 @@
+import 'package:android_intent_plus/android_intent.dart';
 import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -201,13 +202,9 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
   /// Adjust `p.subcategoryName` / `p.categoryName` / `p.category`
   /// to whichever field your StoreProduct model uses.
   String _productSubcategory(StoreProduct p) {
-    try {
-      return (p.subCategoryId ?? p.categoryId ?? p.categoryId ?? '')
-          .toString()
-          .trim();
-    } catch (_) {
-      return '';
-    }
+    return p.subCategoryName.isNotEmpty
+        ? p.subCategoryName
+        : p.categoryName;
   }
 
   // ── FILTERED PRODUCTS ─────────────────────────────────────────────────────
@@ -872,22 +869,27 @@ class _HeroBannerLocal extends StatelessWidget {
                 height: 108,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white,
-                  border: Border.all(color: Colors.white, width: 4),
+                  border: Border.all(color: Colors.transparent, ),
                   boxShadow: [
                     BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8)),
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
                   ],
                 ),
-                clipBehavior: Clip.hardEdge,
-                child: logoUrl != null
-                    ? Image.network(logoUrl,
-                    fit: BoxFit.cover,
+                child: ClipOval( // ✅ IMPORTANT
+                  child: logoUrl != null
+                      ? Image.network(
+                    logoUrl,
+                    width: 108,
+                    height: 108,
+                    fit: BoxFit.cover, // ✅ MUST BE cover
                     errorBuilder: (_, __, ___) =>
-                        _LetterFallback(name: storeName))
-                    : _LetterFallback(name: storeName),
+                        _LetterFallback(name: storeName),
+                  )
+                      : _LetterFallback(name: storeName),
+                ),
               ),
               const SizedBox(height: 14),
               Padding(
@@ -1041,13 +1043,37 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
       _isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade100;
 
   // ── URL launcher ──────────────────────────────────────────────────────────
-  Future<void> _launchUrl(String url) async {
-    final uri = Uri.tryParse(
-        url.startsWith('http') ? url : 'https://$url');
-    if (uri == null) return;
-    // if (await canLaunchUrl(uri)) {
-    //   await launchUrl(uri, mode: LaunchMode.externalApplication);
-    // }
+  Future<void> _launchUrl(String value) async {
+    if (value.trim().isEmpty) return;
+
+    final text = value.trim();
+
+    if (text.contains('@') && !text.startsWith('http')) {
+      final intent = AndroidIntent(
+        action: 'android.intent.action.SENDTO',
+        data: 'mailto:$text',
+      );
+      await intent.launch();
+      return;
+    }
+
+    if (RegExp(r'^\+?[0-9]{7,15}$').hasMatch(text)) {
+      final intent = AndroidIntent(
+        action: 'android.intent.action.DIAL',
+        data: 'tel:$text',
+      );
+      await intent.launch();
+      return;
+    }
+
+    final url = text.startsWith('http') ? text : 'https://$text';
+
+    final intent = AndroidIntent(
+      action: 'android.intent.action.VIEW',
+      data: url,
+    );
+
+    await intent.launch();
   }
 
   // ── Policy dialog ─────────────────────────────────────────────────────────
@@ -1224,8 +1250,8 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
                           store.selfPickup == 1)
                         _buildDeliveryCard(store),
                       const SizedBox(height: 20),
-                      _buildVisitStoreBtn(),
-                      const SizedBox(height: 30),
+                      // _buildVisitStoreBtn(),
+                      // const SizedBox(height: 30),
                     ],
                   ),
                 ),
@@ -1644,7 +1670,7 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
                 Expanded(
                     child: GestureDetector(
                       onTap: () => _showFullAddressDialog(
-                        title: context.tr('txt_address'),
+                        title: context.trRead('txt_address'),
                         content: store.address,
                       ),
                       child: _gridItem(
@@ -1658,7 +1684,7 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
                 Expanded(
                     child: GestureDetector(
                       onTap: () => _showFullAddressDialog(
-                        title: context.tr('txt_city'),
+                        title: context.trRead('txt_city'),
                         content: store.city,
                       ),
                       child: _gridItem(
@@ -1671,7 +1697,7 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
           const SizedBox(height: 12),
           GestureDetector(
             onTap: () => _showFullAddressDialog(
-              title: context.tr('working_hours'),
+              title: context.trRead('working_hours'),
               content: store.workingHours,
             ),
             child: _gridItem(store.workingHours, Icons.schedule_rounded),
@@ -1766,8 +1792,7 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
                           Clipboard.setData(ClipboardData(text: content));
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('$title ${context.tr('txt_cliped_to_clipboard')}'),
-                              duration: const Duration(seconds: 2),
+                              content: Text('$title ${context.trRead('txt_cliped_to_clipboard')}'),                              duration: const Duration(seconds: 2),
                             ),
                           );
                           Navigator.pop(context);

@@ -145,6 +145,65 @@ class ChatService {
     return response.statusCode == 200;
   }
 
+  /// ✅ Get Messages With Block Status
+  static Future<Map<String, dynamic>> getMessagesWithStatus(
+      int conversationId) async {
+    final headers = await _getHeaders();
 
+    final response = await http.post(
+      Uri.parse("$baseUrl/messages"),
+      headers: {
+        ...headers,
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode({
+        "conversation_id": conversationId,
+      }),
+    );
+
+    return jsonDecode(response.body);
+  }
+
+  /// ✅ Block / Unblock User
+  static Future<Map<String, dynamic>> toggleBlockUser({
+    required int blockedUserId,
+  }) async {
+    final headers = await _getHeaders();
+
+    final response = await http.post(
+      Uri.parse("${ApiService.baseUrl}/toggle-block-user"),
+      headers: {
+        ...headers,
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode({
+        "blocked_user_id": blockedUserId,
+      }),
+    );
+
+    return jsonDecode(response.body);
+  }
+
+  /// ✅ Report User
+  static Future<Map<String, dynamic>> reportUser({
+    required int reportedUserId,
+    required String description,
+  }) async {
+    final headers = await _getHeaders();
+
+    final response = await http.post(
+      Uri.parse("${ApiService.baseUrl}/store-report"),
+      headers: {
+        ...headers,
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode({
+        "reported_user_id": reportedUserId,
+        "description": description,
+      }),
+    );
+
+    return jsonDecode(response.body);
+  }
 
 }

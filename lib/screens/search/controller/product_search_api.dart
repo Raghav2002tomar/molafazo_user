@@ -13,6 +13,12 @@ class ProductSearchApi {
     required String query,
     String? city,
     String? country,
+
+    // ✅ ADD THESE
+    String? deliveryCity,
+    String? deliveryType,
+    int? deliveryTimeValue,
+    String? deliveryTimeUnit,
   }) async {
 
     if (query.trim().isEmpty && city == null && country == null) {
@@ -27,6 +33,19 @@ class ProductSearchApi {
       if (query.trim().isNotEmpty) "search": query,
       if (city != null && city.isNotEmpty) "city": city,
       if (country != null && country.isNotEmpty) "country": country,
+
+      // ✅ ADD DELIVERY FILTERS
+      if (deliveryCity != null && deliveryCity.isNotEmpty)
+        "delivery_city": deliveryCity,
+
+      if (deliveryType != null && deliveryType.isNotEmpty)
+        "delivery_type": deliveryType,
+
+      if (deliveryTimeValue != null)
+        "delivery_time_value": deliveryTimeValue.toString(),
+
+      if (deliveryTimeUnit != null && deliveryTimeUnit.isNotEmpty)
+        "delivery_time_unit": deliveryTimeUnit,
     };
 
     /// 🔹 Build URI

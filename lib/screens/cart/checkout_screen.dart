@@ -1751,7 +1751,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   void initState() {
     super.initState();
     _extractPaymentModes();
-    _extractStoreAddress();
+    // _extractStoreAddress();
+  }
+  bool _isInit = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (_isInit) {
+      _extractStoreAddress(); // ✅ SAFE HERE
+      _isInit = false;
+    }
   }
 
   void _extractPaymentModes() {
@@ -1867,7 +1878,116 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       }
     });
   }
+  DeliveryConfigModel? _getDeliveryConfigForAddress(CartItem item) {
+    final store = item.product.store;
+    if (store == null || _selectedAddress == null) return null;
 
+    final addressCity = _selectedAddress!.city.trim().toLowerCase();
+
+    final matched = store.deliveryConfig.where((config) {
+      return config.enabled &&
+          config.city.trim().toLowerCase() == addressCity;
+    }).toList();
+
+    if (matched.isEmpty) return null;
+
+    return matched.first;
+  }
+
+  bool _isDeliveryAvailableForAllItems(CartData cartData) {
+    if (_deliveryMethod != 'home_delivery') return true;
+    if (_selectedAddress == null) return false;
+
+    for (final item in cartData.items) {
+      final config = _getDeliveryConfigForAddress(item);
+      if (config == null) return false;
+    }
+
+    return true;
+  }
+
+  int _timeToMinutes(String time) {
+    try {
+      final parts = time.split(':');
+      return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+    } catch (_) {
+      return 9 * 60;
+    }
+  }
+
+  String _formatMinutes(int totalMinutes) {
+    final normalized = totalMinutes % (24 * 60);
+    final hour = normalized ~/ 60;
+    final minute = normalized % 60;
+
+    return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+  }
+
+  String _getDeliveryEta(CartItem item) {
+    final config = _getDeliveryConfigForAddress(item);
+
+    if (config == null) {
+      return context.tr('txt_delivery_not_available');
+    }
+
+    final workingHours = item.product.store?.workingHours ?? '';
+
+    int openingMinutes = 9 * 60;
+    int closingMinutes = 19 * 60;
+
+    if (workingHours.contains('-')) {
+      final parts = workingHours.split('-');
+      openingMinutes = _timeToMinutes(parts[0].trim());
+      closingMinutes = _timeToMinutes(parts[1].trim());
+    }
+
+    final deliveryMinutes = config.deliveryTimeUnit == 'day'
+        ? 24 * 60
+        : config.deliveryTimeValue * 60;
+
+    final now = TimeOfDay.now();
+    final currentMinutes = now.hour * 60 + now.minute;
+
+    if (config.deliveryTimeUnit == 'day') {
+      return '${context.tr('txt_tomorrow_by')} ${_formatMinutes(openingMinutes)}';
+    }
+
+    if (currentMinutes < openingMinutes) {
+      final eta = openingMinutes + deliveryMinutes;
+
+      if (eta <= closingMinutes) {
+        return '${context.tr('txt_today_by')} ${_formatMinutes(eta)}';
+      }
+
+      return '${context.tr('txt_tomorrow_by')} ${_formatMinutes(openingMinutes + deliveryMinutes)}';
+    }
+
+    if (currentMinutes >= closingMinutes) {
+      return '${context.tr('txt_tomorrow_by')} ${_formatMinutes(openingMinutes + deliveryMinutes)}';
+    }
+
+    final todayEta = currentMinutes + deliveryMinutes;
+
+    if (todayEta <= closingMinutes) {
+      return '${context.tr('txt_today_by')} ${_formatMinutes(todayEta)}';
+    }
+
+    return '${context.tr('txt_tomorrow_by')} ${_formatMinutes(openingMinutes + deliveryMinutes)}';
+  }
+
+  String _getDeliveryTypeText(CartItem item) {
+    final config = _getDeliveryConfigForAddress(item);
+
+    if (config == null) {
+      return context.tr('txt_delivery_not_available');
+    }
+
+    if (config.deliveryType == 'courier') {
+      return '🚚 ${context.tr('txt_door_delivery')}';
+    }
+
+    return '🚕 ${context.tr('txt_taxi_intercity_delivery')}';
+  }
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -1921,6 +2041,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
                       // Delivery Address OR Store Address (based on selection)
                       _buildAddressCard(context, isDark, cartData),
+                      const SizedBox(height: 12),
+
+                      if (_deliveryMethod == 'home_delivery' && _selectedAddress != null) ...[
+                        const SizedBox(height: 16),
+                        _buildCheckoutDeliveryInfoCard(context, isDark, cartData),
+                      ],
 
                       const SizedBox(height: 16),
 
@@ -1949,7 +2075,94 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       bottomNavigationBar: _buildCheckoutBottomBar(context, isDark),
     );
   }
+  Widget _buildCheckoutDeliveryInfoCard(
+      BuildContext context,
+      bool isDark,
+      CartData cartData,
+      ) {
+    final isAvailable = _isDeliveryAvailableForAllItems(cartData);
 
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[900] : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isAvailable ? Colors.green.shade200 : Colors.red.shade200,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isAvailable
+                    ? Icons.local_shipping_outlined
+                    : Icons.error_outline,
+                color: isAvailable ? Colors.green : Colors.red,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                context.tr('txt_delivery_time'),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          if (!isAvailable)
+            Text(
+              context.tr('txt_delivery_not_available'),
+              style: const TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.w700,
+              ),
+            )
+          else
+            ...cartData.items.map((item) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${item.product.name}\n${_getDeliveryTypeText(item)} • ${_getDeliveryEta(item)}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.4,
+                          color: isDark ? Colors.white70 : Colors.black87,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+        ],
+      ),
+    );
+  }
   Widget _buildEmptyCart(BuildContext context, bool isDark) {
     return Center(
       child: Column(
@@ -3079,20 +3292,36 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   Future<void> _placeOrder(BuildContext context, CartProvider cart) async {
     // Validation based on delivery method
-    if (_deliveryMethod == 'home_delivery' && _selectedAddress == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(
-          content: Text(context.tr('txt_please_select_delivery')),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
+    final cartData = cart.cartData?.data;
+
+    // ✅ HOME DELIVERY VALIDATION
+    if (_deliveryMethod == 'home_delivery') {
+      if (_selectedAddress == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.tr('txt_select_delivery_address')),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      if (cartData != null && !_isDeliveryAvailableForAllItems(cartData)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.tr('txt_delivery_not_available')),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
     }
 
+    // ✅ PAYMENT VALIDATION
     if (_selectedPayment == 'online' && _selectedBankDetails == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(
-          content: Text(context.tr('txt_please_select_bank')),
+        SnackBar(
+          content: Text(context.tr('txt_select_bank')),
           backgroundColor: Colors.orange,
         ),
       );

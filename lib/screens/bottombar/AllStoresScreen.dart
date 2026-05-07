@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:ecom/screens/bottombar/widget/store_card_widget.dart';
 import '../product/store_detail_screen.dart';
 import 'BottomNavWrapper.dart';
+import 'controller/CityService.dart';
 import 'controller/store_services.dart';
 
 class AllStoresScreen extends StatefulWidget {
@@ -21,6 +22,10 @@ class _AllStoresScreenState extends State<AllStoresScreen> {
   List stores = [];
   List filteredStores = [];
   bool isLoading = true;
+  String? deliveryCity;
+  String? deliveryType;
+  int? deliveryTimeValue;
+  String? deliveryTimeUnit;
 
   @override
   void initState() {
@@ -29,10 +34,23 @@ class _AllStoresScreenState extends State<AllStoresScreen> {
   }
 
   Future<void> loadStores() async {
+    setState(() => isLoading = true);
+
+    final filter = await CityStorage.getDeliveryFilter();
+
+    deliveryCity = filter["delivery_city"];
+    deliveryType = filter["delivery_type"];
+    deliveryTimeValue = filter["delivery_time_value"];
+    deliveryTimeUnit = filter["delivery_time_unit"];
+
     final data = await StoreService.fetchStores(
-      city: widget.city,
       country: widget.country,
+      deliveryCity: deliveryCity,
+      deliveryType: deliveryType,
+      deliveryTimeValue: deliveryTimeValue,
+      deliveryTimeUnit: deliveryTimeUnit,
     );
+
     setState(() {
       stores = data;
       filteredStores = data;

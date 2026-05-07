@@ -307,7 +307,7 @@ class Store {
   final String updatedAt;
   final String? storeBackgroundImage;  // Added this field
   final List<String> governmentId;  // Added this field
-
+  final List<DeliveryConfig> deliveryConfig;
 
 
   Store({
@@ -331,6 +331,7 @@ class Store {
     required this.updatedAt,
     required this.storeBackgroundImage,
     required this.governmentId,
+    required this.deliveryConfig,
   });
   // Helper method to parse type field
   static List<int> _parseType(dynamic value) {
@@ -409,7 +410,10 @@ class Store {
       updatedAt: json['updated_at'] ?? '',
       governmentId: _parseGovernmentId(json['government_id']),
       storeBackgroundImage: json['store_background_image']?.toString(),
-
+      deliveryConfig: (json['delivery_config'] as List<dynamic>?)
+          ?.map((e) => DeliveryConfig.fromJson(e))
+          .toList() ??
+          [],
 
     );
   }
@@ -572,6 +576,32 @@ class RelatedProduct {
         name: '',
         image: '',
       ),
+    );
+  }
+}
+
+class DeliveryConfig {
+  final String city;
+  final bool enabled;
+  final String deliveryType;
+  final String deliveryTimeUnit;
+  final int deliveryTimeValue;
+
+  DeliveryConfig({
+    required this.city,
+    required this.enabled,
+    required this.deliveryType,
+    required this.deliveryTimeUnit,
+    required this.deliveryTimeValue,
+  });
+
+  factory DeliveryConfig.fromJson(Map<String, dynamic> json) {
+    return DeliveryConfig(
+      city: json['city'] ?? '',
+      enabled: json['enabled'].toString() == '1',
+      deliveryType: json['delivery_type'] ?? '',
+      deliveryTimeUnit: json['delivery_time_unit'] ?? '',
+      deliveryTimeValue: int.tryParse(json['delivery_time_value'].toString()) ?? 0,
     );
   }
 }

@@ -6,6 +6,9 @@ import 'controller/order_services.dart';
 import 'model/order_model.dart';
 import 'order_detail_screen.dart';
 
+
+
+
 class OrderListScreen extends StatefulWidget {
   const OrderListScreen({super.key});
 
@@ -90,25 +93,25 @@ class _OrderListScreenState extends State<OrderListScreen> {
       body: Column(
         children: [
           // Filter Bar
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: [
-                  _buildFilterChip('All'),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Pending'),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Completed'),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Cancelled'),
-                ],
-              ),
-            ),
-          ),
+          // Container(
+          //   color: Colors.white,
+          //   padding: const EdgeInsets.symmetric(vertical: 12),
+          //   child: SingleChildScrollView(
+          //     scrollDirection: Axis.horizontal,
+          //     padding: const EdgeInsets.symmetric(horizontal: 12),
+          //     child: Row(
+          //       children: [
+          //         _buildFilterChip('All'),
+          //         const SizedBox(width: 8),
+          //         _buildFilterChip('Pending'),
+          //         const SizedBox(width: 8),
+          //         _buildFilterChip('Completed'),
+          //         const SizedBox(width: 8),
+          //         _buildFilterChip('Cancelled'),
+          //       ],
+          //     ),
+          //   ),
+          // ),
 
           // Order List
           Expanded(

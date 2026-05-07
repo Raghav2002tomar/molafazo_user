@@ -220,6 +220,9 @@ class _AuthScreenState extends State<AuthScreen> {
 
   Future<void> _verifyOtpAndLogin() async {
     final code = _otpController.text.trim();
+    // final fcmToken = await AuthStorage.getFcmToken();
+    final deviceId = await getDeviceId();
+    final deviceType = await getDeviceType();
     if (code.length != 6) {
       ScaffoldMessenger.of(
         context,
@@ -233,7 +236,12 @@ class _AuthScreenState extends State<AuthScreen> {
       final response = await http.post(
         Uri.parse('${ApiService.baseUrl}/customer/verify-otp'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({"phone_number": _rawPhoneNumber, "otp": code}),
+        body: jsonEncode(
+            {"phone_number": _rawPhoneNumber,
+          "otp": code,
+              "device_type": deviceType,
+              "device_id": deviceId,
+            }),
       );
 
       final data = jsonDecode(response.body);
@@ -461,27 +469,31 @@ class _AuthScreenState extends State<AuthScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 40),
-
+              // const SizedBox(height: 40),
+Row(mainAxisAlignment: MainAxisAlignment.center,
+  children: [
+    Image.asset("assets/images/logo_bg_remove.png",height: 200,),
+  ],
+),
               // Welcome Header
-              Text(
-                context.tr('txt_welcome_back'),
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: cs.onBackground,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                context.tr('txt_login_with_number'),
-                style: TextStyle(
-                  fontSize: 16,
-                  color: cs.onBackground.withOpacity(0.6),
-                ),
-              ),
+              // Text(
+              //   context.tr('txt_welcome_back'),
+              //   style: TextStyle(
+              //     fontSize: 28,
+              //     fontWeight: FontWeight.w800,
+              //     color: cs.onBackground,
+              //   ),
+              // ),
+              // const SizedBox(height: 8),
+              // Text(
+              //   context.tr('txt_login_with_number'),
+              //   style: TextStyle(
+              //     fontSize: 16,
+              //     color: cs.onBackground.withOpacity(0.6),
+              //   ),
+              // ),
 
-              const SizedBox(height: 40),
+              // const SizedBox(height: 40),
 
               // Login Card
               Container(
@@ -530,8 +542,8 @@ class _AuthScreenState extends State<AuthScreen> {
                           flag: "🇹🇯",
                           code: "TJ",
                           dialCode: "992",
-                          minLength: 10,
-                          maxLength: 10,
+                          minLength: ApiService.isBebugmode == true? 10: 9,
+                          maxLength: ApiService.isBebugmode == true? 10: 9,
                         ),
                         Country(
                           name: "Russia",
@@ -539,8 +551,8 @@ class _AuthScreenState extends State<AuthScreen> {
                           flag: "🇷🇺",
                           code: "RU",
                           dialCode: "7",
-                          minLength: 10,
-                          maxLength: 10,
+                          minLength: ApiService.isBebugmode == true? 10: 9,
+                          maxLength: ApiService.isBebugmode == true? 10: 9,
                         ),
                       ],
 
@@ -562,8 +574,11 @@ class _AuthScreenState extends State<AuthScreen> {
                           return context.tr('hint_phone_number_required');
                         }
 
-                        if (phone.number.length != 10) {
-                          return context.tr('txt_enter_10_digits');
+                        final min = ApiService.isBebugmode ? 10 : 9;
+                        final max = ApiService.isBebugmode ? 10 : 9;
+
+                        if (phone.number.length < min || phone.number.length > max) {
+                          return 'Enter $min digit phone number';
                         }
 
                         return null;
@@ -612,52 +627,52 @@ class _AuthScreenState extends State<AuthScreen> {
                     const SizedBox(height: 12),
 
                     // Or continue text
-                    Row(
-                      children: [
-                        Expanded(child: Divider(color: cs.outlineVariant)),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Text(
-                            context.tr('txt_or'),
-                            style: TextStyle(color: cs.onSurfaceVariant),
-                          ),
-                        ),
-                        Expanded(child: Divider(color: cs.outlineVariant)),
-                      ],
-                    ),
+                    // Row(
+                    //   children: [
+                    //     Expanded(child: Divider(color: cs.outlineVariant)),
+                    //     Padding(
+                    //       padding: const EdgeInsets.symmetric(horizontal: 12),
+                    //       child: Text(
+                    //         context.tr('txt_or'),
+                    //         style: TextStyle(color: cs.onSurfaceVariant),
+                    //       ),
+                    //     ),
+                    //     Expanded(child: Divider(color: cs.outlineVariant)),
+                    //   ],
+                    // ),
 
-                    const SizedBox(height: 12),
-
-                    // Skip Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: OutlinedButton(
-                        onPressed: () {
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const SimpleBottomNavScreen(),
-                            ),
-                                (route) => false,
-
-                          );
-                        },
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: cs.outlineVariant),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: Text(
-                          context.tr('txt_skip_for_now'),
-                          style: TextStyle(
-                            color: cs.onSurface.withOpacity(0.8),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
+                    // const SizedBox(height: 12),
+                    //
+                    // // Skip Button
+                    // SizedBox(
+                    //   width: double.infinity,
+                    //   height: 48,
+                    //   child: OutlinedButton(
+                    //     onPressed: () {
+                    //       Navigator.pushAndRemoveUntil(
+                    //         context,
+                    //         MaterialPageRoute(
+                    //           builder: (_) => const SimpleBottomNavScreen(),
+                    //         ),
+                    //             (route) => false,
+                    //
+                    //       );
+                    //     },
+                    //     style: OutlinedButton.styleFrom(
+                    //       side: BorderSide(color: cs.outlineVariant),
+                    //       shape: RoundedRectangleBorder(
+                    //         borderRadius: BorderRadius.circular(14),
+                    //       ),
+                    //     ),
+                    //     child: Text(
+                    //       context.tr('txt_skip_for_now'),
+                    //       style: TextStyle(
+                    //         color: cs.onSurface.withOpacity(0.8),
+                    //         fontWeight: FontWeight.w600,
+                    //       ),
+                    //     ),
+                    //   ),
+                    // ),
                   ],
                 ),
               ),

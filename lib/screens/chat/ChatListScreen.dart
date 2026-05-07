@@ -174,6 +174,8 @@ import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/api_service.dart';
+import '../auth/LoginScreen.dart';
+import '../cart/controller/cart_services.dart';
 import 'ConversationScreen.dart';
 import 'chat_service.dart';
 import 'conversation_model.dart';
@@ -196,6 +198,19 @@ class _ChatListScreenState extends State<ChatListScreen> {
   }
 
   Future<void> loadConversations() async {
+    final result = await CartService.getCartList();
+
+    if (result['requiresLogin'] == true) {
+      // User not logged in, redirect to login
+      if (mounted) {
+        Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AuthScreen())
+        );
+      }
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     final data = await ChatService.getConversations();

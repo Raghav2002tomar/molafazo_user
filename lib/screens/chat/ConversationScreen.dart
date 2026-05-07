@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-
+import 'package:provider/provider.dart';
+import 'package:path/path.dart' as path;
+import '../../providers/notification_handler.dart';
 import '../../services/api_service.dart';
 import 'chat_service.dart';
 import 'message_model.dart';
@@ -44,9 +47,188 @@ class _ChatDetailScreenState
   List<MessageModel> messages = [];
 
   Timer? timer;
-
+  bool isBlocked = false;
+  bool blockedByMe = false;
+  bool blockedByOtherUser = false;
+  int? chatUserId;
+  bool blockLoading = false;
   bool isLoading = true;
+  final TextEditingController reportCtrl = TextEditingController();
+  final List<String> blockedWords = [
 
+    /// ================= ENGLISH =================
+    'abuse','abusive','abusing',
+    'scam','fraud','cheat','fake',
+    'idiot','stupid','dumb','moron','loser',
+    'kill','die','murder','suicide',
+    'sex','nude','porn','xxx','naked',
+    'fuck','shit','bitch','asshole','bastard','damn','hell',
+    'slut','whore','dick','pussy','cock',
+
+    /// ================= RUSSIAN =================
+    'дурак','идиот','тупой','дебил',
+    'убью','убить','сдохни','умри',
+    'секс','порно','голый','раздетый',
+    'мошенник','обман','скам',
+    'блять','сука','хуй','пизда','ебать',
+
+    /// ================= TAJIK =================
+    'ахмак','аблах','девона','беақл',
+    'куштан','мир','мемирам',
+    'секc','урён','фоҳиша',
+    'қаллоб','фиреб','дурӯғ',
+
+  ];
+
+  String normalizeText(String text) {
+    return text
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-zA-Zа-яА-Я0-9]'), '');
+  }
+
+  bool containsBadWords(String text) {
+    final normalized = normalizeText(text);
+
+    return blockedWords.any((word) {
+      final cleanWord = normalizeText(word);
+      return normalized.contains(cleanWord);
+    });
+  }
+
+  String? selectedReportReason;
+  bool reportLoading = false;
+
+  final List<String> reportReasonKeys = [
+    'reason_abusive',
+    'reason_spam',
+    'reason_fake',
+    'reason_inappropriate',
+    'reason_harassment',
+    'reason_other',
+  ];
+  Future<void> showReportDialog() async {
+    selectedReportReason = null;
+    reportCtrl.clear();
+
+    final tr = Provider.of<TranslateProvider>(
+      context,
+      listen: false,
+    ).t;
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(tr('txt_report_user')),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ...reportReasonKeys.map((reasonKey) {
+                      return RadioListTile<String>(
+                        value: reasonKey,
+                        groupValue: selectedReportReason,
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(tr(reasonKey)),
+                        onChanged: (value) {
+                          setDialogState(() {
+                            selectedReportReason = value;
+                          });
+                        },
+                      );
+                    }).toList(),
+
+                    const SizedBox(height: 10),
+
+                    TextField(
+                      controller: reportCtrl,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: tr('txt_type_custom_reason'),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: reportLoading
+                      ? null
+                      : () => Navigator.pop(dialogContext),
+                  child: Text(tr('txt_cancel')),
+                ),
+                ElevatedButton(
+                  onPressed: reportLoading
+                      ? null
+                      : () async {
+                    final customText = reportCtrl.text.trim();
+
+                    if (selectedReportReason == null &&
+                        customText.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(tr('txt_select_report_reason')),
+                        ),
+                      );
+                      return;
+                    }
+
+                    final description = [
+                      if (selectedReportReason != null)
+                        tr(selectedReportReason!),
+                      if (customText.isNotEmpty) customText,
+                    ].join(" - ");
+
+                    setDialogState(() {
+                      reportLoading = true;
+                    });
+
+                    try {
+                      final data = await ChatService.reportUser(
+                        reportedUserId: chatUserId!,
+                        description: description,
+                      );
+
+                      if (mounted) Navigator.pop(dialogContext);
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            data['message']?.toString() ??
+                                tr('txt_report_sent'),
+                          ),
+                        ),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(tr('txt_something_wrong')),
+                        ),
+                      );
+                    } finally {
+                      reportLoading = false;
+                    }
+                  },
+                  child: reportLoading
+                      ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                      : Text(tr('txt_submit')),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
   final baseImageUrl =
       "${ApiService.ImagebaseUrl}${ApiService.chat_images_URL}/";
 
@@ -69,13 +251,17 @@ class _ChatDetailScreenState
   }
 
   Future<void> pickCameraImage() async {
-
     final picked = await picker.pickImage(
       source: ImageSource.camera,
       imageQuality: 70,
     );
 
     if (picked == null) return;
+
+    final file = File(picked.path);
+
+    final valid = await isValidChatImage(file);
+    if (!valid) return;
 
     await ChatService.sendImage(
       conversationId: widget.conversationId,
@@ -106,33 +292,37 @@ class _ChatDetailScreenState
     timer?.cancel();
     controller.dispose();
     scrollController.dispose();
+    reportCtrl.dispose();
     super.dispose();
   }
 
   /// ================= LOAD =================
 
   Future<void> loadMessages() async {
-
     try {
+      final data = await ChatService.getMessagesWithStatus(
+        widget.conversationId,
+      );
 
-      final data =
-      await ChatService.getMessages(
-          widget.conversationId);
+      final list = data['messages'] ?? [];
 
-      final newMessages =
-      data.map((e) =>
-          MessageModel.fromJson(e)).toList();
+      final newMessages = list
+          .map<MessageModel>((e) => MessageModel.fromJson(e))
+          .toList();
 
       if (mounted) {
         setState(() {
           messages = newMessages;
+          isBlocked = data['is_blocked'] == true;
+          blockedByMe = data['blocked_by_me'] == true;
+          blockedByOtherUser = data['blocked_by_other_user'] == true;
+          chatUserId = data['chat_user_id'];
           isLoading = false;
         });
       }
 
       scrollToBottom();
-
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         setState(() {
           isLoading = false;
@@ -141,6 +331,49 @@ class _ChatDetailScreenState
     }
   }
 
+
+  Future<void> toggleBlockUser() async {
+    if (chatUserId == null || blockLoading) return;
+    final tr = Provider.of<TranslateProvider>(
+      context,
+      listen: false,
+    ).t;
+    setState(() {
+      blockLoading = true;
+    });
+
+    try {
+      final data = await ChatService.toggleBlockUser(
+        blockedUserId: chatUserId!,
+      );
+
+      if (data['status'] == true) {
+        setState(() {
+          isBlocked = data['is_blocked'] == true;
+          blockedByMe = data['is_blocked'] == true;
+          blockedByOtherUser = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(data['message']?.toString() ?? ''),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+         SnackBar(
+           content: Text(tr('txt_something_wrong')),
+         ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          blockLoading = false;
+        });
+      }
+    }
+  }
   /// ================= SCROLL =================
 
   void scrollToBottom() {
@@ -167,22 +400,32 @@ class _ChatDetailScreenState
   /// ================= SEND MESSAGE =================
 
   Future<void> sendMessage() async {
+    final tr = Provider.of<TranslateProvider>(
+      context,
+      listen: false,
+    ).t;
 
-    final text =
-    controller.text.trim();
+    final text = controller.text.trim();
 
     if (text.isEmpty) return;
 
+    if (containsBadWords(text)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(tr('txt_message_not_allowed')),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     controller.clear();
 
-    /// Local add for instant UI
     setState(() {
-
       messages.add(
         MessageModel(
           id: 0,
-          conversationId:
-          widget.conversationId,
+          conversationId: widget.conversationId,
           senderId: 0,
           isMe: true,
           senderName: "",
@@ -191,39 +434,70 @@ class _ChatDetailScreenState
           message: text,
           image: null,
           type: "text",
-          sendAt:
-          DateTime.now().toString(),
-          createdAt:
-          DateTime.now().toString(),
+          sendAt: DateTime.now().toString(),
+          createdAt: DateTime.now().toString(),
         ),
       );
-
     });
 
     scrollToBottom();
 
     await ChatService.sendMessage(
-      conversationId:
-      widget.conversationId,
+      conversationId: widget.conversationId,
       message: text,
     );
   }
+  Future<bool> isValidChatImage(File file) async {
+    final tr = Provider.of<TranslateProvider>(
+      context,
+      listen: false,
+    ).t;
 
+    final ext = path.extension(file.path).toLowerCase();
+    final allowedExt = ['.jpg', '.jpeg', '.png', '.webp'];
+
+    if (!allowedExt.contains(ext)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(tr('txt_invalid_image_type')),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return false;
+    }
+
+    final sizeInBytes = await file.length();
+    final sizeInMb = sizeInBytes / (1024 * 1024);
+
+    if (sizeInMb > 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(tr('txt_image_size_limit')),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return false;
+    }
+
+    return true;
+  }
   /// ================= SEND IMAGE =================
 
   Future<void> pickImage() async {
-
-    final picked =
-    await picker.pickImage(
+    final picked = await picker.pickImage(
       source: ImageSource.gallery,
       imageQuality: 70,
     );
 
     if (picked == null) return;
 
+    final file = File(picked.path);
+
+    final valid = await isValidChatImage(file);
+    if (!valid) return;
+
     await ChatService.sendImage(
-      conversationId:
-      widget.conversationId,
+      conversationId: widget.conversationId,
       imagePath: picked.path,
     );
 
@@ -527,6 +801,40 @@ class _ChatDetailScreenState
             ),
           ],
         ),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'block') {
+                toggleBlockUser();
+              } else if (value == 'report') {
+                if (chatUserId != null) {
+                  showReportDialog();
+                }
+              }
+            },
+            itemBuilder: (popupContext) {
+              final tr = Provider.of<TranslateProvider>(
+                context,
+                listen: false,
+              ).t;
+
+              return [
+                PopupMenuItem(
+                  value: 'block',
+                  child: Text(
+                    blockedByMe
+                        ? tr('txt_unblock_user')
+                        : tr('txt_block_user'),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'report',
+                  child: Text(tr('txt_report_user')),
+                ),
+              ];
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -559,7 +867,26 @@ class _ChatDetailScreenState
           ),
 
           /// INPUT BAR
-
+          if (isBlocked)
+            SafeArea(
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                color: cs.surface,
+                child: Text(
+                  blockedByMe
+                      ? context.tr('txt_blocked_by_me')
+                      : context.tr('txt_blocked_by_other'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: cs.onSurfaceVariant,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            )
+          else
           SafeArea(
             child: Container(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),

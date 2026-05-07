@@ -2,6 +2,7 @@ import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
 
 import 'controller/CityService.dart';
+import 'delivery_filter_screen.dart';
 
 
 class CitySearchScreen extends StatefulWidget {
@@ -109,23 +110,27 @@ class _CitySearchScreenState extends State<CitySearchScreen> {
               child: ListView(
                 children: [
 
+
                   /// 🌍 ALL CITIES OPTION
-               if(widget.type.toString() != "address")   ListTile(
-                    leading: const Icon(Icons.public),
-                    title:  Text(
-                      context.tr('txt_all_cities'),
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    onTap: () async {
-
-                      await CityStorage.removeCity();
-
-                      Navigator.pop(context, {
-                        "id": null,
-                        "name": context.tr('txt_all_cities')
-                      });
-                    },
-                  ),
+                  // if(widget.type.toString() != "address")   ListTile(
+                  //   leading: const Icon(Icons.public),
+                  //   title:  Text(
+                  //     context.tr('txt_all_cities'),
+                  //     style: TextStyle(fontWeight: FontWeight.w600),
+                  //   ),
+                  //   onTap: () async {
+                  //     final allCitiesText = context.tr('txt_all_cities');
+                  //
+                  //     await CityStorage.removeCity();
+                  //
+                  //     if (!mounted) return;
+                  //
+                  //     Navigator.pop(context, {
+                  //       "id": null,
+                  //       "name": allCitiesText,
+                  //     });
+                  //   },
+                  // ),
 
                   const Divider(),
 

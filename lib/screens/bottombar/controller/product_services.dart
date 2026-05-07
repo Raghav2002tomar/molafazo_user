@@ -5,70 +5,91 @@ import '../model/product_model.dart';
 class ProductService {
 
   static Future<List<ProductModel>> fetchProducts({
-  int? categoryId,
-  int? subCategoryId,
-  int? childCategoryId,
-  String? city,
-  String? country,
+    int? categoryId,
+    int? subCategoryId,
+    int? childCategoryId,
+    String? city,
+    String? country,
+    String? deliveryCity,
+    String? deliveryType,
+    int? deliveryTimeValue,
+    String? deliveryTimeUnit,
   }) async {
+    final Map<String, String> queryParams = {};
 
-  final Map<String, String> queryParams = {};
+    if (categoryId != null) {
+      queryParams["category_id"] = categoryId.toString();
+    }
 
-  /// CATEGORY
-  if (categoryId != null) {
-  queryParams["category_id"] = categoryId.toString();
-  }
+    if (subCategoryId != null) {
+      queryParams["subcategory_id"] = subCategoryId.toString();
+    }
 
-  /// SUB CATEGORY
-  if (subCategoryId != null) {
-  queryParams["subcategory_id"] = subCategoryId.toString();
-  }
+    if (childCategoryId != null) {
+      queryParams["child_category_id"] = childCategoryId.toString();
+    }
 
-  /// CHILD CATEGORY
-  if (childCategoryId != null) {
-  queryParams["child_category_id"] = childCategoryId.toString();
-  }
+    if (city != null && city.isNotEmpty && city != "null") {
+      queryParams["city"] = city;
+    }
 
-  /// CITY FILTER
-  if (city != null && city.isNotEmpty && city != "null") {
-    queryParams["city"] = city;
-  }
+    if (country != null && country.isNotEmpty) {
+      queryParams["country"] = country;
+    }
+    if (deliveryCity != null && deliveryCity.isNotEmpty) {
+      queryParams["delivery_city"] = deliveryCity;
+    }
+    if (deliveryType != null && deliveryType.isNotEmpty) {
+      queryParams["delivery_type"] = deliveryType;
+    }
 
-  /// COUNTRY FILTER
-  if (country != null && country.isNotEmpty) {
-  queryParams["country"] = country;
-  }
+    if (deliveryTimeValue != null) {
+      queryParams["delivery_time_value"] = deliveryTimeValue.toString();
+    }
 
-  /// BUILD QUERY STRING
-  final queryString = queryParams.entries
-      .map((e) => "${e.key}=${Uri.encodeComponent(e.value)}")
-      .join("&");
+    if (deliveryTimeUnit != null && deliveryTimeUnit.isNotEmpty) {
+      queryParams["delivery_time_unit"] = deliveryTimeUnit;
+    }
 
-  final endpoint = queryString.isEmpty
-  ? "/customer/products"
-      : "/customer/products?$queryString";
+    final queryString = queryParams.entries
+        .map((e) => "${e.key}=${Uri.encodeComponent(e.value)}")
+        .join("&");
 
-  final token = await AuthStorage.getToken();
+    final endpoint = queryString.isEmpty
+        ? "/customer/products"
+        : "/customer/products?$queryString";
 
-  final res = await ApiService.get(endpoint: endpoint,
-    token: token,   // if null → ApiService will not send Authorization header
+    final token = await AuthStorage.getToken();
 
-  );
+    final res = await ApiService.get(
+      endpoint: endpoint,
+      token: token,
+    );
 
-  if (res["success"] == true) {
-  return (res["data"] as List)
-      .map((e) => ProductModel.fromJson(e))
-      .toList();
-  } else {
-  throw Exception(res["message"] ?? "Failed to fetch products");
-  }
+    if (res["success"] == true) {
+      return (res["data"] as List)
+          .map((e) => ProductModel.fromJson(e))
+          .toList();
+    } else {
+      throw Exception(res["message"] ?? "Failed to fetch products");
+    }
   }
 
   /// 🔹 Fetch all products
   static Future<List<ProductModel>> fetchAllProducts({
-  String? cityId,
+    String? cityId,
+    String? deliveryCity,
+    String? deliveryType,
+    int? deliveryTimeValue,
+    String? deliveryTimeUnit,
   }) {
-  return fetchProducts(city: cityId, );
+    return fetchProducts(
+      city: cityId,
+      deliveryCity: deliveryCity,
+      deliveryType: deliveryType,
+      deliveryTimeValue: deliveryTimeValue,
+      deliveryTimeUnit: deliveryTimeUnit,
+    );
   }
 
 

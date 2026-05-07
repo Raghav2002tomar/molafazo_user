@@ -41,113 +41,84 @@ class _FAQScreenState extends State<FAQScreen> {
   @override
   void initState() {
     super.initState();
-    _loadFAQs();
+    // _loadFAQs();
   }
+  bool _isLoaded = false;
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (!_isLoaded) {
+      _loadFAQs(); // ✅ safe here
+      _isLoaded = true;
+    }
+  }
   void _loadFAQs() {
     _categories = [
+      /// 📦 ORDERS
       FAQCategory(
-        title: context.tr('txt_order_shipping'),
+        title: context.tr('faq_orders'),
         items: [
           FAQItem(
-            question: context.tr('faq_track_order_q'),
-            answer: context.tr('faq_track_order_a'),
+            question: context.tr('faq_order_how_q'),
+            answer: context.tr('faq_order_how_a'),
           ),
+          FAQItem(
+            question: context.tr('faq_order_status_q'),
+            answer: context.tr('faq_order_status_a'),
+          ),
+        ],
+      ),
+
+      /// 🚚 DELIVERY
+      FAQCategory(
+        title: context.tr('faq_delivery'),
+        items: [
           FAQItem(
             question: context.tr('faq_delivery_time_q'),
             answer: context.tr('faq_delivery_time_a'),
           ),
           FAQItem(
-            question: context.tr('faq_shipping_charges_q'),
-            answer: context.tr('faq_shipping_charges_a'),
-          ),
-          FAQItem(
-            question: context.tr('faq_change_address_q'),
-            answer: context.tr('faq_change_address_a'),
+            question: context.tr('faq_not_home_q'),
+            answer: context.tr('faq_not_home_a'),
           ),
         ],
       ),
+
+      /// 💳 PAYMENT
       FAQCategory(
-        title: context.tr('faq_returns'),
-        items: [
-            FAQItem(
-              question: context.tr('faq_return_policy_q'),
-              answer: context.tr('faq_return_policy_a'),
-            ),
-            FAQItem(
-              question: context.tr('faq_initiate_return_q'),
-              answer: context.tr('faq_initiate_return_a'),
-            ),
-            FAQItem(
-              question: context.tr('faq_refund_time_q'),
-              answer: context.tr('faq_refund_time_a'),
-            ),
-            FAQItem(
-              question: context.tr('faq_exchange_q'),
-              answer: context.tr('faq_exchange_a'),
-            ),
-          ],
-      ),
-      FAQCategory(
-        title: context.tr('faq_payments'),
+        title: context.tr('faq_payment'),
         items: [
           FAQItem(
             question: context.tr('faq_payment_methods_q'),
             answer: context.tr('faq_payment_methods_a'),
           ),
+        ],
+      ),
+
+      /// 💬 ACCOUNT & CHAT
+      FAQCategory(
+        title: context.tr('faq_account_chat'),
+        items: [
           FAQItem(
-            question: context.tr('faq_cod_q'),
-            answer: context.tr('faq_cod_a'),
+            question: context.tr('faq_register_q'),
+            answer: context.tr('faq_register_a'),
           ),
           FAQItem(
-            question: context.tr('faq_card_safety_q'),
-            answer: context.tr('faq_card_safety_a'),
-          ),
-          FAQItem(
-            question: context.tr('faq_payment_failed_q'),
-            answer: context.tr('faq_payment_failed_a'),
+            question: context.tr('faq_chat_q'),
+            answer: context.tr('faq_chat_a'),
           ),
         ],
       ),
+
+      /// 🛠 SUPPORT
       FAQCategory(
-        title: context.tr('faq_account'),
+        title: context.tr('faq_support'),
         items: [
           FAQItem(
-            question: context.tr('faq_reset_password_q'),
-            answer: context.tr('faq_reset_password_a'),
-          ),
-          FAQItem(
-            question: context.tr('faq_multiple_address_q'),
-            answer: context.tr('faq_multiple_address_a'),
-          ),
-          FAQItem(
-            question: context.tr('faq_delete_account_q'),
-            answer: context.tr('faq_delete_account_a'),
-          ),
-          FAQItem(
-            question: context.tr('faq_data_security_q'),
-            answer: context.tr('faq_data_security_a'),
-          ),
-        ],
-      ),
-      FAQCategory(
-        title: context.tr('faq_products'),
-        items: [
-          FAQItem(
-            question: context.tr('faq_authentic_products_q'),
-            answer: context.tr('faq_authentic_products_a'),
-          ),
-          FAQItem(
-            question: context.tr('faq_out_of_stock_q'),
-            answer: context.tr('faq_out_of_stock_a'),
-          ),
-          FAQItem(
-            question: context.tr('faq_warranty_q'),
-            answer: context.tr('faq_warranty_a'),
-          ),
-          FAQItem(
-            question: context.tr('faq_preorder_q'),
-            answer: context.tr('faq_preorder_a'),
+            question: context.tr('faq_support_q'),
+            answer: context.tr('faq_support_a'),
           ),
         ],
       ),

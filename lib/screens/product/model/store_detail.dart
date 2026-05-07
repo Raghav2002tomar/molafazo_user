@@ -246,6 +246,9 @@ class StoreProduct {
   final String createdAt;
   final String updatedAt;
   final String primaryImage;
+  final String categoryName;
+  final String subCategoryName;
+  final String childCategoryName;
 
   StoreProduct({
     required this.id,
@@ -280,6 +283,9 @@ class StoreProduct {
     required this.createdAt,
     required this.updatedAt,
     required this.primaryImage,
+    required this.categoryName,
+    required this.subCategoryName,
+    required this.childCategoryName,
   });
 
   // Helper method to parse tags
@@ -349,6 +355,9 @@ class StoreProduct {
       createdAt: json['created_at']?.toString() ?? '',
       updatedAt: json['updated_at']?.toString() ?? '',
       primaryImage: json['primaryimage']?.toString() ?? '',
+      categoryName: json['category']?['name']?.toString() ?? '',
+      subCategoryName: json['sub_category']?['name']?.toString() ?? '',
+      childCategoryName: json['child_category']?['name']?.toString() ?? '',
     );
   }
 }

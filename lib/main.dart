@@ -1,7 +1,7 @@
 
 import 'package:ecom/extensions/context_extension.dart';
+import 'package:ecom/providers/notification_handler.dart';
 import 'package:ecom/providers/theme_provider.dart';
-import 'package:ecom/providers/translate_provider.dart';
 import 'package:ecom/screens/auth/LoginScreen.dart';
 import 'package:ecom/screens/bottombar/MainScreen.dart';
 import 'package:ecom/screens/onboarding/OnBoardingScreen.dart';

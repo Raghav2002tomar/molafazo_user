@@ -67,21 +67,23 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final results = await _searchApi.searchProducts(
-        query: _searchController.text,
-        city: _selectedCity,
-        country: _selectedCountry,
+      final cityData = await CityStorage.getCity();
+      final filter = await CityStorage.getDeliveryFilter();
+
+      final result = await ProductSearchApi().searchProducts(
+        query: _searchController.text.trim(),
+        deliveryCity: cityData["name"],
+        deliveryType: filter["delivery_type"],
+        deliveryTimeValue: filter["delivery_time_value"],
+        deliveryTimeUnit: filter["delivery_time_unit"],
       );
 
       setState(() {
-        _searchResults = results;
+        _searchResults = result;
         _isLoading = false;
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("${context.tr('txt_search_failed')}: $e")),
-      );
     }
   }
 
