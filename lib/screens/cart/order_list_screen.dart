@@ -162,8 +162,11 @@ class _OrderListScreenState extends State<OrderListScreen> {
                 final order = _filteredOrders[index];
                 final statusData = getOrderStatus(order.status);
                 final productCount = order.products.length;
-                final firstProduct = order.products.first;
+                if (order.products.isEmpty) {
+                  return const SizedBox.shrink();
+                }
 
+                final firstProduct = order.products.first;
                 return InkWell(
                   onTap: () {
                     Navigator.push(
@@ -334,7 +337,9 @@ class _OrderListScreenState extends State<OrderListScreen> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                order.paymentType.toUpperCase(),
+                                order.paymentType == 'card'
+                                    ? context.tr('txt_card')
+                                    : context.tr('txt_cod'),
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: Colors.grey.shade600,

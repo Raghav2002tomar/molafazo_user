@@ -177,10 +177,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           value: 'ru',
           child: Text('Русский'),
         ),
-       PopupMenuItem(
-          value: 'tg',
-          child: Text('Тоҷикӣ'),
-        ),
+       // PopupMenuItem(
+       //    value: 'tg',
+       //    child: Text('Тоҷикӣ'),
+       //  ),
       ],
       child: Row(
         mainAxisSize: MainAxisSize.min,

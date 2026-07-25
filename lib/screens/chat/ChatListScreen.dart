@@ -232,6 +232,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
     return Scaffold(
       backgroundColor: cs.surface,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(
           context.tr('txt_chat'),
           style: tt.titleMedium?.copyWith(

@@ -1,4 +1,3 @@
-// lib/screens/faq/faq_screen.dart
 
 import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
@@ -82,6 +81,17 @@ class _FAQScreenState extends State<FAQScreen> {
           FAQItem(
             question: context.tr('faq_not_home_q'),
             answer: context.tr('faq_not_home_a'),
+          ),
+          // ✅ New Taxi FAQ
+          FAQItem(
+            question: context.tr('faq_delivery_taxi_q'),
+            answer: context.tr('faq_delivery_taxi_a'),
+          ),
+
+          // ✅ New Door FAQ
+          FAQItem(
+            question: context.tr('faq_delivery_door_q'),
+            answer: context.tr('faq_delivery_door_a'),
           ),
         ],
       ),

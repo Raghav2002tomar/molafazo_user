@@ -36,6 +36,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  late Future<List<BannerModel>> _bannerFuture;
+  late Future<List<StoreModel>> _storeFuture;
   final ValueNotifier<int?> selectedCategoryId = ValueNotifier(null);
   final ValueNotifier<int?> selectedSubCategoryId = ValueNotifier(null);
   final ValueNotifier<int?> selectedChildCategoryId = ValueNotifier(null);
@@ -53,11 +55,17 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    loadSavedFilters();
 
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   _showCityGuide();
-    // });
+    _bannerFuture = BannerService.fetchBanners(city: selectedCity);
+
+    _storeFuture = StoreService.fetchStores(
+      deliveryCity: selectedCity,
+      deliveryType: deliveryType,
+      deliveryTimeValue: deliveryTimeValue,
+      deliveryTimeUnit: deliveryTimeUnit,
+    );
+
+    loadSavedFilters();
   }
 
   Future<void> _openCityScreen() async {
@@ -65,9 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const CitySearchScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const CitySearchScreen()),
     );
 
     if (result != null) {
@@ -84,7 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       final hasCity =
           (selectedCity != null && selectedCity!.isNotEmpty) ||
-              (deliveryCity != null && deliveryCity!.isNotEmpty);
+          (deliveryCity != null && deliveryCity!.isNotEmpty);
 
       if (!hasCity && mounted) {
         Future.delayed(const Duration(milliseconds: 300), () {
@@ -112,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final hasCity =
         (selectedCity != null && selectedCity!.isNotEmpty) ||
-            (deliveryCity != null && deliveryCity!.isNotEmpty);
+        (deliveryCity != null && deliveryCity!.isNotEmpty);
 
     if (!hasCity) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -185,9 +191,49 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void openDeliveryFilter() {
-    setState(() {
-      showDeliveryFilterWidget = !showDeliveryFilterWidget;
-    });
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+          child: DeliveryFilterScreen(
+            initialDeliveryType: deliveryType,
+            initialTimeValue: deliveryTimeValue,
+            initialTimeUnit: deliveryTimeUnit,
+            onApply: (result) async {
+              await CityStorage.saveDeliveryFilter(
+                city: selectedCity ?? '',
+                deliveryType: result["delivery_type"],
+                deliveryTimeValue: result["delivery_time_value"],
+                deliveryTimeUnit: result["delivery_time_unit"],
+              );
+
+              setState(() {
+                deliveryCity = selectedCity;
+                deliveryType = result["delivery_type"];
+                deliveryTimeValue = result["delivery_time_value"];
+                deliveryTimeUnit = result["delivery_time_unit"];
+
+                _storeFuture = StoreService.fetchStores(
+                  deliveryCity: selectedCity,
+                  deliveryType: deliveryType,
+                  deliveryTimeValue: deliveryTimeValue,
+                  deliveryTimeUnit: deliveryTimeUnit,
+                );
+              });
+
+              Navigator.pop(context);
+              _fetchAllProducts();
+            },
+            onClose: () {
+              Navigator.pop(context);
+            },
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -222,7 +268,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: Colors.transparent,
                           child: InkWell(
                             borderRadius: BorderRadius.circular(8),
-                            onTap:()  {
+                            onTap: () {
                               _openCityScreen();
                             },
                             child: Row(
@@ -341,20 +387,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
                             InkWell(
                               onTap: () {
+                                // Navigator.push(
+                                //   context,
+                                //   MaterialPageRoute(
+                                //     builder: (context) => BottomNavWrapper(
+                                //       currentIndex: 1, // Shop tab
+                                //       onTap: (index) {
+                                //         // Handle tab change - navigate to appropriate screen
+                                //         Navigator.pop(context);
+                                //         // Then change tab in main bottom nav
+                                //       },
+                                //       child: AllProductsScreen(
+                                //         // initialCategoryId: categoryId,
+                                //         // categoryName: categoryName,
+                                //       ),
+                                //     ),
+                                //   ),
+                                // );
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => BottomNavWrapper(
-                                      currentIndex: 1, // Shop tab
-                                      onTap: (index) {
-                                        // Handle tab change - navigate to appropriate screen
-                                        Navigator.pop(context);
-                                        // Then change tab in main bottom nav
-                                      },
-                                      child: AllProductsScreen(
-                                        // initialCategoryId: categoryId,
-                                        // categoryName: categoryName,
-                                      ),
+                                    builder: (context) => AllProductsScreen(
+
                                     ),
                                   ),
                                 );
@@ -385,7 +439,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: SizedBox(
                 height: 200, // 🔥 Bigger banner
                 child: FutureBuilder<List<BannerModel>>(
-                  future: BannerService.fetchBanners(city: selectedCity),
+                  future: _bannerFuture,
                   builder: (_, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const _PromoBannerShimmer();
@@ -441,7 +495,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: openDeliveryFilter,
                   borderRadius: BorderRadius.circular(24),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(24),
@@ -449,7 +506,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.filter_alt, size: 18, color: Colors.black),
+                        const Icon(
+                          Icons.filter_alt,
+                          size: 18,
+                          color: Colors.black,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -491,40 +552,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            if (showDeliveryFilterWidget)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                  child: DeliveryFilterScreen(
-                    initialDeliveryType: deliveryType,
-                    initialTimeValue: deliveryTimeValue,
-                    initialTimeUnit: deliveryTimeUnit,
-    onApply: (result) async {
-    await CityStorage.saveDeliveryFilter(
-    city: selectedCity ?? '',
-    deliveryType: result["delivery_type"],
-    deliveryTimeValue: result["delivery_time_value"],
-    deliveryTimeUnit: result["delivery_time_unit"],
-    );
 
-    setState(() {
-    deliveryCity = selectedCity;
-    deliveryType = result["delivery_type"];
-    deliveryTimeValue = result["delivery_time_value"];
-    deliveryTimeUnit = result["delivery_time_unit"];
-    showDeliveryFilterWidget = false;
-    });
-
-    _fetchAllProducts();
-    },
-                    onClose: () {
-                      setState(() {
-                        showDeliveryFilterWidget = false;
-                      });
-                    },
-                  ),
-                ),
-              ),
             const SliverToBoxAdapter(child: SizedBox(height: 12)),
 
             /// PRODUCTS SECTION HEADER
@@ -586,9 +614,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               );
                             },
                           ),
-                          childCount: list.length >= 6
-                              ? 6
-                              : list.length, // SAFE LIMIT
+                          childCount: list.length
+                          //     >= 6
+                          //     ? 6
+                          //     :
+                          // list.length, // SAFE LIMIT
                         ),
                       ),
                     );
@@ -635,12 +665,7 @@ class _HomeScreenState extends State<HomeScreen> {
             /// STORES LIST
             // ── STORES VERTICAL LIST ─────────────────────────────────────
             FutureBuilder<List<StoreModel>>(
-              future: StoreService.fetchStores(
-                deliveryCity: selectedCity,
-                deliveryType: deliveryType,
-                deliveryTimeValue: deliveryTimeValue,
-                deliveryTimeUnit: deliveryTimeUnit,
-              ),
+              future: _storeFuture,
               builder: (context, snapshot) {
                 // Loading shimmer
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -708,35 +733,35 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: StoreCardWidget(
                           store: limited[i],
                           onTap: () {
-                            // Navigator.push(
-                            //   context,
-                            //   MaterialPageRoute(
-                            //     builder: (_) => StoreDetailScreen(
-                            //       storeId: limited[i].id,
-                            //       storeName: limited[i].id,
-                            //     ),
-                            //   ),
-                            // );
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => BottomNavWrapper(
-                                  currentIndex: 1, // Shop tab
-                                  onTap: (index) {
-                                    // Handle tab change - navigate to appropriate screen
-                                    Navigator.pop(context);
-                                    // Then change tab in main bottom nav
-                                  },
-                                  child: StoreDetailScreen(
-                                    storeId: limited[i].id,
-
-                                    storeName: limited[i].id.toString(),
-                                    // initialCategoryId: categoryId,
-                                    // categoryName: categoryName,
-                                  ),
+                                builder: (_) => StoreDetailScreen(
+                                  storeId: limited[i].id,
+                                  storeName: limited[i].id.toString(),
                                 ),
                               ),
                             );
+                            // Navigator.push(
+                            //   context,
+                            //   MaterialPageRoute(
+                            //     builder: (context) => BottomNavWrapper(
+                            //       currentIndex: 1, // Shop tab
+                            //       onTap: (index) {
+                            //         // Handle tab change - navigate to appropriate screen
+                            //         Navigator.pop(context);
+                            //         // Then change tab in main bottom nav
+                            //       },
+                            //       child: StoreDetailScreen(
+                            //         storeId: limited[i].id,
+                            //
+                            //         storeName: limited[i].id.toString(),
+                            //         // initialCategoryId: categoryId,
+                            //         // categoryName: categoryName,
+                            //       ),
+                            //     ),
+                            //   ),
+                            // );
                           },
                         ),
                       ),
@@ -1247,35 +1272,35 @@ class _BigPromoCard extends StatelessWidget {
       );
     } else if (banner.type == "store") {
       // Navigate to store detail
-      // Navigator.push(
-      //   context,
-      //   MaterialPageRoute(
-      //     builder: (_) => StoreDetailScreen(
-      //       storeId: int.parse(selectedId),
-      //       storeName: banner.title ?? "Store Details",
-      //     ),
-      //   ),
-      // );
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => BottomNavWrapper(
-            currentIndex: 1, // Shop tab
-            onTap: (index) {
-              // Handle tab change - navigate to appropriate screen
-              Navigator.pop(context);
-              // Then change tab in main bottom nav
-            },
-            child: StoreDetailScreen(
-              storeId: int.parse(selectedId),
-
-              storeName: banner.title ?? context.tr('txt_store_details'),
-              // initialCategoryId: categoryId,
-              // categoryName: categoryName,
-            ),
+          builder: (_) => StoreDetailScreen(
+            storeId: int.parse(selectedId),
+            storeName: banner.title ?? "Store Details",
           ),
         ),
       );
+      // Navigator.push(
+      //   context,
+      //   MaterialPageRoute(
+      //     builder: (context) => BottomNavWrapper(
+      //       currentIndex: 1, // Shop tab
+      //       onTap: (index) {
+      //         // Handle tab change - navigate to appropriate screen
+      //         Navigator.pop(context);
+      //         // Then change tab in main bottom nav
+      //       },
+      //       child: StoreDetailScreen(
+      //         storeId: int.parse(selectedId),
+      //
+      //         storeName: banner.title ?? context.tr('txt_store_details'),
+      //         // initialCategoryId: categoryId,
+      //         // categoryName: categoryName,
+      //       ),
+      //     ),
+      //   ),
+      // );
     }
   }
 

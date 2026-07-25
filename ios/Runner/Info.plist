@@ -3,33 +3,12 @@
 <plist version="1.0">
 <dict>
 
-
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
-	<!-- Camera -->
-    <key>NSCameraUsageDescription</key>
-    <string>This app uses the camera to take photos for chat and profile.</string>
-
-    <!-- Photo Library -->
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>This app allows you to select images for chat and profile.</string>
-
-    <!-- Photo Library Add (optional but recommended) -->
-    <key>NSPhotoLibraryAddUsageDescription</key>
-    <string>This app saves images you upload.</string>
-    <key>NSAppTransportSecurity</key>
-    <dict>
-        <key>NSAllowsArbitraryLoads</key>
-        <true/>
-    </dict>
-
-    <!-- Notifications -->
-    <key>NSUserNotificationUsageDescription</key>
-    <string>This app sends notifications for messages and updates.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Ecom</string>
+	<string>inBozor</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -48,6 +27,21 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>This app uses the camera to take photos for chat and profile.</string>
+	<key>NSFallDetectionUsageDescription</key>
+	<string></string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>This app saves images you upload.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app allows you to select images for chat and profile.</string>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>This app sends notifications for messages and updates.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -71,6 +65,10 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

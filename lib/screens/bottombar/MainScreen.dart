@@ -1,95 +1,131 @@
 // lib/theme/app_theme.dart remains the same, you already provide light/dark schemes.
 
 import 'package:ecom/extensions/context_extension.dart';
+import 'package:ecom/screens/auth/LoginScreen.dart';
 import 'package:ecom/screens/product/product_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/cart_provider.dart';
+import '../../services/auth_service.dart';
+import '../../widgets/login_required_screen.dart';
 import '../cart/cart_screen.dart';
 import '../chat/ChatListScreen.dart';
 import 'HomeScreen.dart';
 import 'ProfileScreen.dart';
 
 class SimpleBottomNavScreen extends StatefulWidget {
-  const SimpleBottomNavScreen({super.key});
+  final int selectedIndex;
+
+  const SimpleBottomNavScreen({
+    super.key,
+    this.selectedIndex = 0,
+  });
 
   @override
-  State<SimpleBottomNavScreen> createState() => _SimpleBottomNavScreenState();
+  State<SimpleBottomNavScreen> createState() =>
+      _SimpleBottomNavScreenState();
 }
 
 class _SimpleBottomNavScreenState extends State<SimpleBottomNavScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex;
 
-  final List<Widget> _screens =  [
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.selectedIndex;
+  }
+
+  List<Widget> get _screens => [
     HomeScreen(),
-    CartScreen(),
-    ChatListScreen(),
-    ProfileScreen(),
+    _AuthRequiredWrapper(child: CartScreen()),
+    _AuthRequiredWrapper(child: ChatListScreen()),
+    _AuthRequiredWrapper(child: ProfileScreen()),
   ];
 
   @override
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Scaffold(
-      backgroundColor: cs.surface,
-      body: _screens[_currentIndex],
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: cs.surface,
-          boxShadow: [
-            BoxShadow(
-              color: cs.shadow.withOpacity(0.08),
-              blurRadius: 16,
-              offset: const Offset(0, -4),
-            ),
-          ],
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
+
+    return PopScope(
+      canPop: false, // phone back button disabled on this screen
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+
+        // Optional: if user is not on Home tab, move to Home tab
+        if (_currentIndex != 0) {
+          setState(() => _currentIndex = 0);
+        }
+
+        // If already on Home tab, do nothing
+      },
+      child: Scaffold(
+        backgroundColor: cs.surface,
+        body: IndexedStack(
+          index: _currentIndex,
+          children: _screens,
         ),
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _NavItem(
-                  index: 0,
-                  currentIndex: _currentIndex,
-                  icon: Icons.home_rounded,
-                  label: context.tr('title_home'),
-                  onTap: _onTap,
-                ),
-                Consumer<CartProvider>(
-                  builder: (context, cart, child) {
-                    return _NavItem(
-                      index: 1,
-                      currentIndex: _currentIndex,
-                      icon: Icons.shopping_cart_outlined,
-                      label: context.tr('title_cart'),
-                      onTap: _onTap,
-                      cartCount: cart.cartCount,
-                    );
-                  },
-                ),
-                _NavItem(
-                  index: 2,
-                  currentIndex: _currentIndex,
-                  icon: Icons.chat_outlined,
-                  label: context.tr('title_chat'),
-                  onTap: _onTap,
-                ),
-                _NavItem(
-                  index: 3,
-                  currentIndex: _currentIndex,
-                  icon: Icons.person_outline_rounded,
-                  label: context.tr('title_profile'),
-                  onTap: _onTap,
-                ),
-              ],
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            color: cs.surface,
+            boxShadow: [
+              BoxShadow(
+                color: cs.shadow.withOpacity(0.08),
+                blurRadius: 16,
+                offset: const Offset(0, -4),
+              ),
+            ],
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 12.0,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _NavItem(
+                    index: 0,
+                    currentIndex: _currentIndex,
+                    icon: Icons.home_rounded,
+                    label: context.tr('title_home'),
+                    onTap: _onTap,
+                  ),
+                  Consumer<CartProvider>(
+                    builder: (context, cart, child) {
+                      return _NavItem(
+                        index: 1,
+                        currentIndex: _currentIndex,
+                        icon: Icons.shopping_cart_outlined,
+                        label: context.tr('title_cart'),
+                        onTap: _onTap,
+                        cartCount: cart.cartCount,
+                      );
+                    },
+                  ),
+                  _NavItem(
+                    index: 2,
+                    currentIndex: _currentIndex,
+                    icon: Icons.chat_outlined,
+                    label: context.tr('title_chat'),
+                    onTap: _onTap,
+                  ),
+                  _NavItem(
+                    index: 3,
+                    currentIndex: _currentIndex,
+                    icon: Icons.person_outline_rounded,
+                    label: context.tr('title_profile'),
+                    onTap: _onTap,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -97,7 +133,23 @@ class _SimpleBottomNavScreenState extends State<SimpleBottomNavScreen> {
     );
   }
 
-  void _onTap(int i) => setState(() => _currentIndex = i);
+  void _onTap(int i) async {
+    // Home is always open
+    if (i == 0) {
+      setState(() => _currentIndex = i);
+      return;
+    }
+
+    // Cart, Chat, Profile require login
+    final token = await AuthStorage.getToken();
+
+    if (token == null || token.isEmpty) {
+      setState(() => _currentIndex = i);
+      return;
+    }
+
+    setState(() => _currentIndex = i);
+  }
 }
 
 class _NavItem extends StatelessWidget {
@@ -217,6 +269,41 @@ class _NavItem extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+class _AuthRequiredWrapper extends StatelessWidget {
+  final Widget child;
+
+  const _AuthRequiredWrapper({
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String?>(
+      future: AuthStorage.getToken(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final token = snapshot.data;
+
+        if (token == null || token.isEmpty) {
+          return LoginRequiredScreen(
+            showBackButton: false,
+            onLogin: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context)=>AuthScreen()));
+              // Navigate to your login screen here
+              // Example:
+              // Navigator.pushNamed(context, '/login');
+            },
+          );
+        }
+
+        return child;
+      },
     );
   }
 }

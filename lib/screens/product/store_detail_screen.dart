@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:ecom/extensions/context_extension.dart';
 import 'package:flutter/material.dart';
@@ -32,8 +34,8 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
   String? _errorMessage;
 
   /// "All" is always first; rest come from product subcategories
-  String _selectedCategory = 'All';
-
+  String _selectedCategory = 'all';
+  List<String> _subcategories = [];
   late AnimationController _fadeCtrl;
   late Animation<double> _fadeAnim;
   Color? _storeBackgroundColor;
@@ -42,7 +44,6 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
   Map<String, dynamic>? _deliveryPolicy;
 
   /// Dynamic subcategory list built from products
-  List<String> _subcategories = ['All'];
   // Back button animation - make them nullable or initialize later
   AnimationController? _backButtonCtrl;
   Animation<double>? _backButtonAnim;
@@ -189,13 +190,19 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
   /// ── Change the field name below to match your StoreProduct model ──
   void _buildSubcategories(List<StoreProduct> products) {
     final seen = <String>{};
-    final cats = <String>['All'];
+    final cats = <String>['all'];
+
     for (final p in products) {
       final name = _productSubcategory(p);
-      if (name.isNotEmpty && seen.add(name)) cats.add(name);
+      if (name.isNotEmpty && seen.add(name)) {
+        cats.add(name);
+      }
     }
-    _subcategories = cats;
-    _selectedCategory = 'All';
+
+    setState(() {
+      _subcategories = cats;
+      _selectedCategory = 'all';
+    });
   }
 
   /// Returns the subcategory label for a product.
@@ -209,9 +216,13 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
 
   // ── FILTERED PRODUCTS ─────────────────────────────────────────────────────
   List<StoreProduct> get _filteredProducts {
-    final all = _cachedStoreData?.data.products ?? [];
-    if (_selectedCategory == 'All') return all;
-    return all
+    final allProducts = _cachedStoreData?.data.products ?? [];
+
+    if (_selectedCategory == 'all') {
+      return allProducts;
+    }
+
+    return allProducts
         .where((p) => _productSubcategory(p) == _selectedCategory)
         .toList();
   }
@@ -424,7 +435,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
                   ],
                 ),
                 child: Text(
-                  cat,
+                  cat == 'all' ? context.tr('txt_all') : cat,
                   style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
@@ -450,7 +461,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                _selectedCategory == 'All'
+                _selectedCategory == 'all'
                     ? context.tr('txt_all_products')
                     : _selectedCategory,
                 style: TextStyle(
@@ -502,7 +513,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
                         : Colors.grey.shade300),
                 const SizedBox(height: 12),
                 Text(
-                  _selectedCategory == 'All'
+                  _selectedCategory == 'all'
                       ? context.tr('no_product_available')
                       : '${context.tr('txt_no_products_in')} "$_selectedCategory"',
                   style:
@@ -637,7 +648,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          '$pct% off',
+                          '$pct% ${context.tr('txt_off')}',
                           style: TextStyle(
                             color: _isDark
                                 ? Colors.black87
@@ -912,41 +923,41 @@ class _HeroBannerLocal extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      color: Colors.white.withOpacity(0.2), width: 1),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.star_rounded,
-                        size: 15, color: Colors.amber.shade400),
-                    const SizedBox(width: 4),
-                    const Text('4.8',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          shadows: [
-                            Shadow(
-                                color: Colors.black45,
-                                blurRadius: 6)
-                          ],
-                        )),
-                    const SizedBox(width: 4),
-                    Text('(2.5K ${context.tr('txt_rating')})',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.82),
-                          fontSize: 12.5,
-                        )),
-                  ],
-                ),
-              ),
+              // Container(
+              //   padding: const EdgeInsets.symmetric(
+              //       horizontal: 14, vertical: 5),
+              //   decoration: BoxDecoration(
+              //     color: Colors.black.withOpacity(0.3),
+              //     borderRadius: BorderRadius.circular(20),
+              //     border: Border.all(
+              //         color: Colors.white.withOpacity(0.2), width: 1),
+              //   ),
+              //   child: Row(
+              //     mainAxisSize: MainAxisSize.min,
+              //     children: [
+              //       Icon(Icons.star_rounded,
+              //           size: 15, color: Colors.amber.shade400),
+              //       const SizedBox(width: 4),
+              //       // const Text('4.8',
+              //       //     style: TextStyle(
+              //       //       color: Colors.white,
+              //       //       fontSize: 14,
+              //       //       fontWeight: FontWeight.w700,
+              //       //       shadows: [
+              //       //         Shadow(
+              //       //             color: Colors.black45,
+              //       //             blurRadius: 6)
+              //       //       ],
+              //       //     )),
+              //       // const SizedBox(width: 4),
+              //       // Text('(2.5K ${context.tr('txt_rating')})',
+              //       //     style: TextStyle(
+              //       //       color: Colors.white.withOpacity(0.82),
+              //       //       fontSize: 12.5,
+              //       //     )),
+              //     ],
+              //   ),
+              // ),
             ],
           ),
         ),
@@ -1043,39 +1054,42 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
       _isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade100;
 
   // ── URL launcher ──────────────────────────────────────────────────────────
+  static const MethodChannel _iosLauncherChannel =
+  MethodChannel('ios_url_launcher_channel');
+
   Future<void> _launchUrl(String value) async {
     if (value.trim().isEmpty) return;
 
     final text = value.trim();
 
-    if (text.contains('@') && !text.startsWith('http')) {
+    if (Platform.isAndroid) {
+      final url = text.startsWith('http') ? text : 'https://$text';
+
       final intent = AndroidIntent(
-        action: 'android.intent.action.SENDTO',
-        data: 'mailto:$text',
+        action: 'android.intent.action.VIEW',
+        data: url,
       );
+
       await intent.launch();
       return;
     }
 
-    if (RegExp(r'^\+?[0-9]{7,15}$').hasMatch(text)) {
-      final intent = AndroidIntent(
-        action: 'android.intent.action.DIAL',
-        data: 'tel:$text',
-      );
-      await intent.launch();
-      return;
+    if (Platform.isIOS) {
+      String url;
+
+      if (text.contains('@') && !text.startsWith('http')) {
+        url = 'mailto:$text';
+      } else if (RegExp(r'^\+?[0-9]{7,15}$').hasMatch(text)) {
+        url = 'tel:$text';
+      } else {
+        url = text.startsWith('http') ? text : 'https://$text';
+      }
+
+      await _iosLauncherChannel.invokeMethod('openUrl', {
+        'url': url,
+      });
     }
-
-    final url = text.startsWith('http') ? text : 'https://$text';
-
-    final intent = AndroidIntent(
-      action: 'android.intent.action.VIEW',
-      data: url,
-    );
-
-    await intent.launch();
   }
-
   // ── Policy dialog ─────────────────────────────────────────────────────────
   void _showPolicyDialog({
     required String title,
@@ -1235,7 +1249,7 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
                       const SizedBox(height: 16),
                       _buildStoreHeader(store),
                       const SizedBox(height: 16),
-                      _buildReviewsCard(),
+                      // _buildReviewsCard(),
                       const SizedBox(height: 12),
                       _buildPoliciesCard(),
                       const SizedBox(height: 12),
@@ -1353,16 +1367,16 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
                     fontWeight: FontWeight.w700,
                     color: _textColor)),
             const SizedBox(height: 2),
-            Row(
-              children: [
-                Icon(Icons.star_rounded,
-                    size: 14, color: Colors.amber),
-                const SizedBox(width: 3),
-                Text('4.8 (2.5K ratings)',
-                    style: TextStyle(
-                        fontSize: 12, color: _subTextColor)),
-              ],
-            ),
+            // Row(
+            //   children: [
+            //     Icon(Icons.star_rounded,
+            //         size: 14, color: Colors.amber),
+            //     const SizedBox(width: 3),
+            //     Text('4.8 (2.5K ratings)',
+            //         style: TextStyle(
+            //             fontSize: 12, color: _subTextColor)),
+            //   ],
+            // ),
           ],
         ),
       ],
@@ -1410,9 +1424,9 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
                         color: _textColor,
                         height: 1)),
                 const SizedBox(height: 4),
-                Text('2.5K ratings',
-                    style: TextStyle(
-                        fontSize: 13, color: _subTextColor)),
+                // Text('2.5K ratings',
+                //     style: TextStyle(
+                //         fontSize: 13, color: _subTextColor)),
               ],
             ),
             const SizedBox(width: 20),

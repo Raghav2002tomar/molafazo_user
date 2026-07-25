@@ -68,9 +68,9 @@ class _FavoriteProductsScreenState extends State<FavoriteProductsScreen> {
 
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: .72,
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 0.55,
               ),
 
               itemBuilder: (context, index) {

@@ -44,6 +44,11 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
   bool isCategoryExpanded = false;
   String? selectedCity;
   String? selectedCountry;
+  List<ProductModel> displayProducts = [];
+
+  String? selectedPrice;
+  String selectedSort = 'default';
+
 
   @override
   void initState() {
@@ -84,6 +89,7 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
 
       setState(() {
         products = result;
+        _applySortAndFilter();
         isLoading = false;
       });
 
@@ -93,6 +99,45 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
         isLoading = false;
       });
     }
+  }
+
+  void _applySortAndFilter() {
+    List<ProductModel> list = List.from(products);
+
+    if (selectedPrice == 'under_500') {
+      list = list.where((p) {
+        final price = double.tryParse((p.discountPrice ?? p.price).toString()) ?? 0;
+        return price < 500;
+      }).toList();
+    } else if (selectedPrice == '500_1000') {
+      list = list.where((p) {
+        final price = double.tryParse((p.discountPrice ?? p.price).toString()) ?? 0;
+        return price >= 500 && price <= 1000;
+      }).toList();
+    } else if (selectedPrice == 'above_1000') {
+      list = list.where((p) {
+        final price = double.tryParse((p.discountPrice ?? p.price).toString()) ?? 0;
+        return price > 1000;
+      }).toList();
+    }
+
+    if (selectedSort == 'price_low') {
+      list.sort((a, b) {
+        final aPrice = double.tryParse((a.discountPrice ?? a.price).toString()) ?? 0;
+        final bPrice = double.tryParse((b.discountPrice ?? b.price).toString()) ?? 0;
+        return aPrice.compareTo(bPrice);
+      });
+    } else if (selectedSort == 'price_high') {
+      list.sort((a, b) {
+        final aPrice = double.tryParse((a.discountPrice ?? a.price).toString()) ?? 0;
+        final bPrice = double.tryParse((b.discountPrice ?? b.price).toString()) ?? 0;
+        return bPrice.compareTo(aPrice);
+      });
+    } else if (selectedSort == 'name_az') {
+      list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    }
+
+    displayProducts = list;
   }
 
   void _selectCategory(int categoryId, String categoryName) {
@@ -123,6 +168,90 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
     });
     _fetchProducts();
   }
+  void _showSortBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _sortTile('default', context.tr('txt_default')),
+              _sortTile('price_low', context.tr('txt_price_low_high')),
+              _sortTile('price_high', context.tr('txt_price_high_low')),
+              _sortTile('name_az', context.tr('txt_name_az')),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sortTile(String value, String title) {
+    return ListTile(
+      title: Text(title),
+      trailing: selectedSort == value
+          ? const Icon(Icons.check_circle, color: Colors.green)
+          : null,
+      onTap: () {
+        Navigator.pop(context);
+        setState(() {
+          selectedSort = value;
+          _applySortAndFilter();
+        });
+      },
+    );
+  }
+
+  void _showFilterBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _filterChip(null, context.tr('txt_all')),
+              _filterChip('under_500', '${context.tr('txt_under')} 500 c.'),
+              _filterChip('500_1000', '500 - 1000 c.'),
+              _filterChip('above_1000', '${context.tr('txt_above')} 1000 c.'),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _filterChip(String? value, String label) {
+    final isSelected = selectedPrice == value;
+
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      selectedColor: Colors.black,
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : Colors.black,
+        fontWeight: FontWeight.w600,
+      ),
+      onSelected: (_) {
+        Navigator.pop(context);
+        setState(() {
+          selectedPrice = value;
+          _applySortAndFilter();
+        });
+      },
+    );
+  }
+
 
   String get _screenTitle {
     if (widget.categoryName != null) {
@@ -308,24 +437,34 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
                 padding: const EdgeInsets.fromLTRB(
                     16, 6, 16, 12),
                 child: Row(
-                  mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
                   children: [
-
-                     Text(
+                    Text(
                       context.tr('txt_products'),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
+                    const SizedBox(width: 8),
                     Text(
-                      "${products.length} ${context.tr('txt_items')}",
+                      "(${displayProducts.length})",
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontSize: 14,
+                        fontWeight: FontWeight.w600,
                       ),
+                    ),
+                    const Spacer(),
+                    _SmallActionButton(
+                      icon: Icons.sort_rounded,
+                      label: context.tr('txt_sort'),
+                      onTap: _showSortBottomSheet,
+                    ),
+                    const SizedBox(width: 8),
+                    _SmallActionButton(
+                      icon: Icons.tune_rounded,
+                      label: context.tr('txt_filter'),
+                      onTap: _showFilterBottomSheet,
                     ),
                   ],
                 ),
@@ -953,32 +1092,30 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
       sliver: SliverGrid(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 0.75,
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: 0.55,
         ),
         delegate: SliverChildBuilderDelegate(
               (context, index) {
-            final product = products[index];
 
-            return ProductCardWidget( // ✅ YOUR MAIN CARD
+            final product = displayProducts[index];
+
+            return ProductCardWidget(
               product: product,
-
-              /// optional callbacks if your card supports
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) =>
-                        ProductDetailScreen(productId: product.id),
+                    builder: (_) => ProductDetailScreen(
+                      productId: product.id,
+                    ),
                   ),
                 );
               },
-
-
             );
           },
-          childCount: products.length,
+          childCount: displayProducts.length,
         ),
       ),
     );
@@ -1083,6 +1220,46 @@ class _ProductCard extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+class _SmallActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _SmallActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 14, color: Colors.white),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],

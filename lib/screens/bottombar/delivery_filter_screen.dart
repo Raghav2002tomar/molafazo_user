@@ -119,10 +119,10 @@ class _DeliveryFilterScreenState extends State<DeliveryFilterScreen> {
 
           SliderTheme(
             data: SliderTheme.of(context).copyWith(
-              activeTrackColor: Colors.black,
-              inactiveTrackColor: Colors.black,
-              thumbColor: const Color(0xff00C96B),
-              overlayColor: const Color(0xff00C96B).withOpacity(0.15),
+              activeTrackColor: Colors.grey,
+              inactiveTrackColor: Colors.grey,
+              thumbColor: Colors.black,
+              overlayColor: Colors.black12,
               trackHeight: 4,
             ),
             child: Slider(
@@ -183,14 +183,14 @@ class _DeliveryFilterScreenState extends State<DeliveryFilterScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xff00C96B) : Colors.grey.shade200,
+          color: selected ? Colors.black : Colors.grey.shade300,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           title,
-          style: const TextStyle(
+          style:  TextStyle(
             fontSize: 15,
-            color: Colors.black,
+            color:selected? Colors.white: Colors.black,
             fontWeight: FontWeight.w500,
           ),
         ),

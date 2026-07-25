@@ -855,7 +855,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           final totalAmount = _calculateTotal(order);
 
           final orderDate = _formatDateTime(order['created_at'] ?? order['createdAt']);
-          final paymentType = order['payment_type']?.toString().toUpperCase() ?? 'N/A';
+          final rawPaymentType = order['payment_type']?.toString().toLowerCase() ?? '';
+
+          final paymentType = rawPaymentType == 'card'
+              ? context.tr('txt_card')
+              : rawPaymentType == 'cod'
+              ? context.tr('txt_cod')
+              : context.tr('txt_cash');
           final deliveryAddress = order['delivery_address']?.toString() ?? 'No address provided';
 
           return SingleChildScrollView(
@@ -1195,7 +1201,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  "Qty: ${item.quantity}",
+                  "${context.tr('txt_qty')}: ${item.quantity}",
                   style: const TextStyle(fontSize: 11, color: Color(0xFF22C55E), fontWeight: FontWeight.w600),
                 ),
               ),
@@ -1210,10 +1216,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.black87),
             ),
             const SizedBox(height: 2),
-            Text(
-              "${item.quantity} item${item.quantity > 1 ? 's' : ''}",
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
-            ),
+            // Text(
+            //   "${item.quantity} item${item.quantity > 1 ? 's' : ''}",
+            //   style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+            // ),
           ],
         ),
       ],

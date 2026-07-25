@@ -24,17 +24,18 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
     await Future.delayed(const Duration(seconds: 2));
 
     final isLoggedIn = await AuthStorage.isLoggedIn();
+    Navigator.push(context, MaterialPageRoute(builder: (context)=>SimpleBottomNavScreen()));
 
-    if (!mounted) return;
+    // if (!mounted) return;
 
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (_) =>
-        isLoggedIn ? const SimpleBottomNavScreen() : const AuthScreen(),
-      ),
-          (route) => false,
-    );
+    // Navigator.pushAndRemoveUntil(
+    //   context,
+    //   MaterialPageRoute(
+    //     builder: (_) =>
+    //     isLoggedIn ? const SimpleBottomNavScreen() : const AuthScreen(),
+    //   ),
+    //       (route) => false,
+    // );
   }
 
   @override

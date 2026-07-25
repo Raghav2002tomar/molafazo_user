@@ -62,7 +62,7 @@ class _ChatDetailScreenState
     'idiot','stupid','dumb','moron','loser',
     'kill','die','murder','suicide',
     'sex','nude','porn','xxx','naked',
-    'fuck','shit','bitch','asshole','bastard','damn','hell',
+    'fuck','shit','bitch','asshole','bastard','damn',
     'slut','whore','dick','pussy','cock',
 
     /// ================= RUSSIAN =================
@@ -196,14 +196,14 @@ class _ChatDetailScreenState
 
                       if (mounted) Navigator.pop(dialogContext);
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            data['message']?.toString() ??
-                                tr('txt_report_sent'),
-                          ),
-                        ),
-                      );
+                      // ScaffoldMessenger.of(context).showSnackBar(
+                      //   SnackBar(
+                      //     content: Text(
+                      //       data['message']?.toString() ??
+                      //           tr('txt_report_sent'),
+                      //     ),
+                      //   ),
+                      // );
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -354,11 +354,11 @@ class _ChatDetailScreenState
           blockedByOtherUser = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(data['message']?.toString() ?? ''),
-          ),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(
+        //     content: Text(data['message']?.toString() ?? ''),
+        //   ),
+        // );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

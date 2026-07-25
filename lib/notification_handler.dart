@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:ecom/screens/cart/order_detail_screen.dart';
 import 'package:ecom/screens/cart/order_list_screen.dart';
 import 'package:ecom/screens/chat/ConversationScreen.dart';
@@ -175,7 +176,12 @@ class NotificationHandler {
       visibility: NotificationVisibility.public,
     );
 
-    const details = NotificationDetails(android: androidDetails);
+    const iosDetails = DarwinNotificationDetails();
+
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
 
     await _flutterLocalNotificationsPlugin.show(
       id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
@@ -195,10 +201,33 @@ class NotificationHandler {
   }
 
   Future<void> _fetchAndSaveFcmToken() async {
-    final token = await _firebaseMessaging.getToken();
-    if (token != null) {
-      print("fcm token ===== ${token}");
-      await AuthStorage.saveFcmToken(token);
+    try {
+      if (Platform.isIOS) {
+        String? apnsToken = await _firebaseMessaging.getAPNSToken();
+
+        int retry = 0;
+        while (apnsToken == null && retry < 10) {
+          await Future.delayed(const Duration(seconds: 1));
+          apnsToken = await _firebaseMessaging.getAPNSToken();
+          retry++;
+        }
+
+        if (apnsToken == null) {
+          print("APNS token not ready yet");
+          return;
+        }
+
+        print("APNS token ===== $apnsToken");
+      }
+
+      final token = await _firebaseMessaging.getToken();
+
+      if (token != null) {
+        print("fcm token ===== $token");
+        await AuthStorage.saveFcmToken(token);
+      }
+    } catch (e) {
+      print("FCM token error ===== $e");
     }
   }
 }

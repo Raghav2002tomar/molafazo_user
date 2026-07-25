@@ -90,22 +90,22 @@ class _AllStoresScreenState extends State<AllStoresScreen> {
             ),
           ),
 
-          const SizedBox(height: 10),
+          // const SizedBox(height: 10),
 
-          // ── COUNT ─────────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                "${filteredStores.length} ${context.tr('txt_stores_available')}",
-                style: tt.labelMedium?.copyWith(
-                  color: cs.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
+          // // ── COUNT ─────────────────────────────────────────────────────
+          // Padding(
+          //   padding: const EdgeInsets.symmetric(horizontal: 16),
+          //   child: Align(
+          //     alignment: Alignment.centerLeft,
+          //     child: Text(
+          //       "${filteredStores.length} ${context.tr('txt_stores_available')}",
+          //       style: tt.labelMedium?.copyWith(
+          //         color: cs.primary,
+          //         fontWeight: FontWeight.w600,
+          //       ),
+          //     ),
+          //   ),
+          // ),
 
           const SizedBox(height: 10),
 
@@ -124,35 +124,35 @@ class _AllStoresScreenState extends State<AllStoresScreen> {
                       return StoreCardWidget(
                         store: store,
                         onTap: () {
-                          // Navigator.push(
-                          //   context,
-                          //   MaterialPageRoute(
-                          //     builder: (_) => StoreDetailScreen(
-                          //       storeId: store.id,
-                          //       storeName: store.name,
-                          //     ),
-                          //   ),
-                          // );
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => BottomNavWrapper(
-                                currentIndex: 1, // Shop tab
-                                onTap: (index) {
-                                  // Handle tab change - navigate to appropriate screen
-                                  Navigator.pop(context);
-                                  // Then change tab in main bottom nav
-                                },
-                                child: StoreDetailScreen(
-                                  storeId: store.id,
-
-                                  storeName: store.name,
-                                  // initialCategoryId: categoryId,
-                                  // categoryName: categoryName,
-                                ),
+                              builder: (_) => StoreDetailScreen(
+                                storeId: store.id,
+                                storeName: store.name,
                               ),
                             ),
                           );
+                          // Navigator.push(
+                          //   context,
+                          //   MaterialPageRoute(
+                          //     builder: (context) => BottomNavWrapper(
+                          //       currentIndex: 1, // Shop tab
+                          //       onTap: (index) {
+                          //         // Handle tab change - navigate to appropriate screen
+                          //         Navigator.pop(context);
+                          //         // Then change tab in main bottom nav
+                          //       },
+                          //       child: StoreDetailScreen(
+                          //         storeId: store.id,
+                          //
+                          //         storeName: store.name,
+                          //         // initialCategoryId: categoryId,
+                          //         // categoryName: categoryName,
+                          //       ),
+                          //     ),
+                          //   ),
+                          // );
                         },
                       );
                     },

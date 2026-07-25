@@ -100,13 +100,13 @@ class _CartScreenState extends State<CartScreen> {
       context.read<CartProvider>().refreshCart(); // update bottom badge
       _loadCart(); // Reload cart
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.tr('txt_item_removed_cart')),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(
+        //     content: Text(context.tr('txt_item_removed_cart')),
+        //     backgroundColor: Colors.green,
+        //     behavior: SnackBarBehavior.floating,
+        //   ),
+        // );
       }
     } else {
       if (mounted) {
@@ -141,56 +141,56 @@ class _CartScreenState extends State<CartScreen> {
             fontSize: 18,
           ),
         ),
-        actions: [
-          if (!_isLoading && _cartData?.data != null && _cartData!.data!.items.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHigh,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: cs.outline, width: 0.5),
-                ),
-                child: IconButton(
-                  icon: Stack(
-                    children: [
-                      Icon(
-                        Icons.shopping_bag_outlined,
-                        color: cs.onSurface,
-                        size: 20,
-                      ),
-                      if (_cartData!.data!.items.isNotEmpty)
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: BoxDecoration(
-                              color: cs.primary,
-                              shape: BoxShape.circle,
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 16,
-                              minHeight: 16,
-                            ),
-                            child: Text(
-                              '${_cartData!.data!.items.length}',
-                              style: TextStyle(
-                                color: cs.onPrimary,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  onPressed: () {},
-                ),
-              ),
-            ),
-        ],
+        // actions: [
+        //   if (!_isLoading && _cartData?.data != null && _cartData!.data!.items.isNotEmpty)
+        //     Padding(
+        //       padding: const EdgeInsets.all(8.0),
+        //       child: Container(
+        //         decoration: BoxDecoration(
+        //           color: cs.surfaceContainerHigh,
+        //           shape: BoxShape.circle,
+        //           border: Border.all(color: cs.outline, width: 0.5),
+        //         ),
+        //         child: IconButton(
+        //           icon: Stack(
+        //             children: [
+        //               Icon(
+        //                 Icons.shopping_bag_outlined,
+        //                 color: cs.onSurface,
+        //                 size: 20,
+        //               ),
+        //               if (_cartData!.data!.items.isNotEmpty)
+        //                 Positioned(
+        //                   right: 0,
+        //                   top: 0,
+        //                   child: Container(
+        //                     padding: const EdgeInsets.all(2),
+        //                     decoration: BoxDecoration(
+        //                       color: cs.primary,
+        //                       shape: BoxShape.circle,
+        //                     ),
+        //                     constraints: const BoxConstraints(
+        //                       minWidth: 16,
+        //                       minHeight: 16,
+        //                     ),
+        //                     child: Text(
+        //                       '${_cartData!.data!.items.length}',
+        //                       style: TextStyle(
+        //                         color: cs.onPrimary,
+        //                         fontSize: 10,
+        //                         fontWeight: FontWeight.bold,
+        //                       ),
+        //                       textAlign: TextAlign.center,
+        //                     ),
+        //                   ),
+        //                 ),
+        //             ],
+        //           ),
+        //           onPressed: () {},
+        //         ),
+        //       ),
+        //     ),
+        // ],
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator(color: cs.primary))
@@ -239,35 +239,35 @@ class _CartScreenState extends State<CartScreen> {
                             size: 80,
                             color: cs.primary.withOpacity(0.3),
                           ),
-                          Positioned(
-                            right: 40,
-                            top: 40,
-                            child: TweenAnimationBuilder(
-                              duration: const Duration(milliseconds: 2000),
-                              tween: Tween<double>(begin: 0.0, end: 1.0),
-                              curve: Curves.bounceOut,
-                              builder: (context, double value, child) {
-                                return Opacity(
-                                  opacity: value,
-                                  child: Transform.translate(
-                                    offset: Offset(0, -20 * (1 - value)),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: cs.error,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.remove_shopping_cart,
-                                        color: Colors.white,
-                                        size: 24,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
+                          // Positioned(
+                          //   right: 40,
+                          //   top: 40,
+                          //   child: TweenAnimationBuilder(
+                          //     duration: const Duration(milliseconds: 2000),
+                          //     tween: Tween<double>(begin: 0.0, end: 1.0),
+                          //     curve: Curves.bounceOut,
+                          //     builder: (context, double value, child) {
+                          //       return Opacity(
+                          //         opacity: value,
+                          //         child: Transform.translate(
+                          //           offset: Offset(0, -20 * (1 - value)),
+                          //           child: Container(
+                          //             padding: const EdgeInsets.all(8),
+                          //             decoration: BoxDecoration(
+                          //               color: cs.error,
+                          //               shape: BoxShape.circle,
+                          //             ),
+                          //             child: const Icon(
+                          //               Icons.remove_shopping_cart,
+                          //               color: Colors.white,
+                          //               size: 24,
+                          //             ),
+                          //           ),
+                          //         ),
+                          //       );
+                          //     },
+                          //   ),
+                          // ),
                         ],
                       ),
                     ),
@@ -289,15 +289,15 @@ class _CartScreenState extends State<CartScreen> {
 
               const SizedBox(height: 12),
 
-              Text(
-                context.tr('txt_cart_description'),
-                textAlign: TextAlign.center,
-                style: tt.bodyMedium?.copyWith(
-                  color: cs.onSurfaceVariant,
-                  fontSize: 16,
-                  height: 1.5,
-                ),
-              ),
+              // Text(
+              //   context.tr('txt_cart_description'),
+              //   textAlign: TextAlign.center,
+              //   style: tt.bodyMedium?.copyWith(
+              //     color: cs.onSurfaceVariant,
+              //     fontSize: 16,
+              //     height: 1.5,
+              //   ),
+              // ),
 
               const SizedBox(height: 40),
 
@@ -765,13 +765,13 @@ class _CartItemCard extends StatelessWidget {
                             ),
                           ),
                         // Subtotal
-                        Text(
-                          '${context.tr('txt_subtotal')}: ${(itemPrice * cartItem.quantity).toInt()} c.',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: cs.onSurfaceVariant,
-                          ),
-                        ),
+                        // Text(
+                        //   '${context.tr('txt_subtotal')}: ${(itemPrice * cartItem.quantity).toInt()} c.',
+                        //   style: TextStyle(
+                        //     fontSize: 11,
+                        //     color: cs.onSurfaceVariant,
+                        //   ),
+                        // ),
                       ],
                     ),
 

@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import '../../../providers/cart_provider.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service.dart';
+import '../../../widgets/login_required_screen.dart';
+import '../../auth/LoginScreen.dart';
 import '../../cart/controller/cart_services.dart';
 import '../../product/product_details_screen.dart';
 import '../controller/CityService.dart';
@@ -131,13 +133,13 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
       if (res["status"] == true) {
         if (mounted) {
           context.read<CartProvider>().refreshCart();
-          ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(
-              content: Text(context.tr('txt_added_to_cart')),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
+          // ScaffoldMessenger.of(context).showSnackBar(
+          //    SnackBar(
+          //     content: Text(context.tr('txt_added_to_cart')),
+          //     backgroundColor: Colors.green,
+          //     duration: Duration(seconds: 2),
+          //   ),
+          // );
         }
       } else {
         if (res['requiresLogin'] == true) {
@@ -443,11 +445,24 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
                       onTap: () async {
                         final token = await AuthStorage.getToken();
                         if (token == null || token.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                             SnackBar(content: Text(context.tr('txt_login_first'))),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => LoginRequiredScreen(
+                                onLogin: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => AuthScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
                           );
                           return;
                         }
+
                         final res = await ApiService.post(
                           endpoint: "/customer/product/favorite/toggle",
                           token: token,
@@ -483,6 +498,38 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+
+                  const SizedBox(height: 4),
+                  Text(
+                    product.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: tt.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Text(
+                        "${formatPrice(double.parse((product.discountPrice ?? product.price).toString()))} c.",
+                        style: tt.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      if (hasDiscount)
+                        Text(
+                          formatPrice(double.parse(product.price.toString())),
+                          style: tt.bodySmall?.copyWith(
+                            decoration: TextDecoration.lineThrough,
+                            color: Colors.grey,
+                          ),
+                        ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 4),
+                  _buildDeliveryInfo(product),
                   Row(
                     children: [
                       ...List.generate(5, (index) {
@@ -502,37 +549,6 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    product.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: tt.bodySmall?.copyWith(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Text(
-                        "${formatPrice(double.parse((product.discountPrice ?? product.price).toString()))} c.",
-                        style: tt.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      if (hasDiscount)
-                        Text(
-                          formatPrice(double.parse(product.price.toString())),
-                          style: tt.bodySmall?.copyWith(
-                            decoration: TextDecoration.lineThrough,
-                            color: cs.onSurface.withOpacity(.5),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  _buildDeliveryInfo(product),
-
                   const SizedBox(height: 8),
                   // Cart Button
                   SizedBox(
@@ -1361,9 +1377,33 @@ class _VariantSelectionBottomSheetState
           child: ElevatedButton(
             onPressed: isOutOfStock
                 ? null
-                : () {
-                    widget.onAddToCart(selectedCombination?.id, quantity);
-                  },
+                : () async {
+              final token = await AuthStorage.getToken();
+
+              if (token == null || token.isEmpty) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LoginRequiredScreen(
+                      onLogin: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AuthScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
+                return;
+              }
+
+              widget.onAddToCart(
+                selectedCombination?.id,
+                quantity,
+              );
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: isOutOfStock
                   ? Colors.grey.shade400

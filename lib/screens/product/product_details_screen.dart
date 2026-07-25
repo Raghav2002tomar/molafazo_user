@@ -1,5 +1,6 @@
 import 'package:ecom/extensions/context_extension.dart';
 import 'package:ecom/screens/auth/LoginScreen.dart';
+import 'package:ecom/screens/bottombar/model/product_model.dart' show ProductModel;
 import 'package:ecom/screens/cart/cart_screen.dart';
 import 'package:ecom/screens/product/store_detail_screen.dart';
 import 'package:flutter/material.dart';
@@ -8,8 +9,11 @@ import 'package:provider/provider.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../../providers/cart_provider.dart';
+import '../../widgets/login_required_screen.dart';
 import '../bottombar/BottomNavWrapper.dart';
+import '../bottombar/MainScreen.dart';
 import '../bottombar/controller/CityService.dart';
+import '../bottombar/controller/product_services.dart';
 import '../bottombar/widget/product_card_widget.dart';
 import '../cart/controller/cart_services.dart';
 import '../chat/ConversationScreen.dart';
@@ -55,11 +59,42 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     double _averageRating = 0;
     int _totalReviews = 0;
 
+    List<ProductModel> _categoryRelatedProducts = [];
+    bool _isLoadingRelatedProducts = false;
+
     @override
     void initState() {
         super.initState();
         loadSelectedDeliveryCity();
         _loadProductData();
+    }
+    Future<void> _fetchCategoryRelatedProducts(ProductDetail product) async {
+      try {
+        setState(() {
+          _isLoadingRelatedProducts = true;
+        });
+
+        final result = await ProductService.fetchProducts(
+          categoryId: product.category?.id,
+        );
+
+        if (!mounted) return;
+
+        setState(() {
+          _categoryRelatedProducts = result
+              .where((p) => p.id != product.id)
+              .toList();
+
+          _isLoadingRelatedProducts = false;
+        });
+      } catch (e) {
+        if (!mounted) return;
+
+        setState(() {
+          _categoryRelatedProducts = [];
+          _isLoadingRelatedProducts = false;
+        });
+      }
     }
 
     Future<void> loadSelectedDeliveryCity() async {
@@ -290,6 +325,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     _fetchReviews();
                 }
             }
+            await _fetchCategoryRelatedProducts(data.data);
         } catch (e) {
             print('Error in _loadProductData: $e');
             if (mounted) {
@@ -359,11 +395,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     String _getDeliveryPriceText(ProductDetail product) {
         if (product.deliveryPrice == null || product.deliveryPrice.isEmpty) {
-            return 'Free';
+            return '${context.tr('txt_free')}';
         }
         final price = double.tryParse(product.deliveryPrice) ?? 0;
         if (price == 0) {
-            return 'Free';
+            return '${context.tr('txt_free')}';
         }
         return '${price.toInt()} c.';
     }
@@ -514,6 +550,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                 },
                                                 selectedColor: Colors.black,
                                                 labelStyle: TextStyle(
+                                                  fontSize: 12,
                                                     color: isSelected ? Colors.white : null
                                                 )
                                             );
@@ -906,36 +943,40 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           final addedText = context.trRead('txt_added_to_cart');
           final viewCartText = context.trRead('txt_view_cart');
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.white),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      result['message'] ?? '${product.name} $addedText',
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              action: SnackBarAction(
-                label: viewCartText,
-                textColor: Colors.white,
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => CartScreen()),
-                  );
-                },
-              ),
-            ),
-          );
+          // ScaffoldMessenger.of(context).showSnackBar(
+          //   SnackBar(
+          //     content: Row(
+          //       children: [
+          //         const Icon(Icons.check_circle, color: Colors.white),
+          //         const SizedBox(width: 12),
+          //         Expanded(
+          //           child: Text(
+          //             result['message'] ?? '${product.name} $addedText',
+          //           ),
+          //         ),
+          //       ],
+          //     ),
+          //     backgroundColor: Colors.green,
+          //     behavior: SnackBarBehavior.floating,
+          //     shape: RoundedRectangleBorder(
+          //       borderRadius: BorderRadius.circular(12),
+          //     ),
+          //     action: SnackBarAction(
+          //       label: viewCartText,
+          //       textColor: Colors.white,
+          //       onPressed: () {
+          //         Navigator.push(
+          //           context,
+          //           MaterialPageRoute(
+          //             builder: (_) => const SimpleBottomNavScreen(
+          //               selectedIndex: 1,
+          //             ),
+          //           ),
+          //         );
+          //       },
+          //     ),
+          //   ),
+          // );
         } else {
           if (result['requiresLogin'] == true) {
             _showLoginDialog();
@@ -1079,10 +1120,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             child: _CartIconWithBadge(
                                 isDark: isDark,
                                 onTap: () {
-                                    Navigator.push(
-                                        context,
-                                        MaterialPageRoute(builder: (context) => CartScreen())
-                                    );
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const SimpleBottomNavScreen(
+                                        selectedIndex: 1,
+                                      ),
+                                    ),
+                                  );
                                 }
                             )
                         ),
@@ -1098,8 +1143,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 // User not logged in, redirect to login
                                 if (mounted) {
                                   Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (context) => const AuthScreen())
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => LoginRequiredScreen(
+                                        onLogin: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => AuthScreen(),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
                                   );
                                 }
                                 return;
@@ -1151,8 +1207,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   // User not logged in, redirect to login
                                   if (mounted) {
                                     Navigator.push(
-                                        context,
-                                        MaterialPageRoute(builder: (context) => const AuthScreen())
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => LoginRequiredScreen(
+                                          onLogin: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) => AuthScreen(),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
                                     );
                                   }
                                   return;
@@ -1171,16 +1238,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                 isFav = !isFav;
                                             });
 
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                                content: Text(
-                                                    isFav
-                                                        ? context.tr('added_to_fav')
-                                                        : context.tr('removed_from_fav')
-                                                ),
-                                                duration: const Duration(seconds: 1)
-                                            )
-                                        );
+                                        // ScaffoldMessenger.of(context).showSnackBar(
+                                        //     SnackBar(
+                                        //         content: Text(
+                                        //             isFav
+                                        //                 ? context.tr('added_to_fav')
+                                        //                 : context.tr('removed_from_fav')
+                                        //         ),
+                                        //         duration: const Duration(seconds: 1)
+                                        //     )
+                                        // );
                                     } else {
                                         if (res["message"] == "Unauthorized user") {
                                             ScaffoldMessenger.of(context).showSnackBar(
@@ -1331,6 +1398,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                         Text(
                                                             product.name,
                                                             style: tt.titleLarge?.copyWith(
+                                                              fontSize: 18,
                                                                 fontWeight: FontWeight.bold,
                                                                 color: cs.onSurface
                                                             )
@@ -1340,6 +1408,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                         Text(
                                                             product.category!.name,
                                                             style: tt.bodyMedium?.copyWith(
+                                                                fontSize: 14,
                                                                 color: cs.onSurfaceVariant
                                                             )
                                                         )
@@ -1397,7 +1466,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                             )
                                         ]
                                     ),
-                                    const SizedBox(height: 16),
+                                    const SizedBox(height: 8),
                                     // Stock status
                                     Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1413,7 +1482,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                                 Clipboard.setData(ClipboardData(text: text));
                                                                 ScaffoldMessenger.of(context).showSnackBar(
                                                                     SnackBar(
-                                                                        content: Text(context.tr('txt_copied')),
+                                                                        content: Text(context.trRead('txt_copied')),
                                                                         duration: Duration(seconds: 1)
                                                                     )
                                                                 );
@@ -1429,7 +1498,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                                         product.articlenumber ?? '',
                                                                         style: const TextStyle(
                                                                             fontWeight: FontWeight.w800,
-                                                                            fontSize: 16,
+                                                                            fontSize: 14,
                                                                             color: Colors.blue
                                                                         )
                                                                     ),
@@ -1465,64 +1534,64 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                             )
                                         ]
                                     ),
-                                    const SizedBox(height: 24),
+                                    // const SizedBox(height: 18),
                                     // Delivery info
-                                    if (product.deliveryAvailable == 1 && _isCombinationAvailable())
-                                    Container(
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                            color: isDark ? cs.surfaceVariant : Colors.blue.shade50,
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(
-                                                color: isDark ? cs.outlineVariant : Colors.blue.shade200
-                                            )
-                                        ),
-                                        child: Row(
-                                            children: [
-                                                Image.asset("assets/images/fast_delivery.png", height: 50),
-
-                                                const SizedBox(width: 15),
-                                                Expanded(
-                                                    child: Column(
-                                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                                        children: [
-                                                            Text(
-                                                                context.tr('txt_delivery_available'),
-                                                                style: tt.bodyMedium?.copyWith(
-                                                                    fontWeight: FontWeight.w600,
-                                                                    color: cs.onSurface
-                                                                )
-                                                            ),
-                                                          Column(
-                                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                                            children: [
-                                                              Text(
-                                                                '${getDeliveryTypeText(product)} • ${getDeliveryShortTime(product)}',
-                                                                style: tt.bodySmall?.copyWith(
-                                                                  color: Colors.green,
-                                                                  fontWeight: FontWeight.w700,
-                                                                ),
-                                                              ),
-                                                              const SizedBox(height: 3),
-                                                              Text(
-                                                                '${_getDeliveryPriceText(product)} • ${getDeliveryEta(product)}',
-                                                                style: tt.bodySmall?.copyWith(
-                                                                  color: cs.onSurfaceVariant,
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          )
-                                                        ]
-                                                    )
-                                                )
-                                            ]
-                                        )
-                                    ),
-                                    const SizedBox(height: 24),
+                                    // if (product.deliveryAvailable == 1 && _isCombinationAvailable())
+                                    // Container(
+                                    //     padding: const EdgeInsets.all(8),
+                                    //     decoration: BoxDecoration(
+                                    //         color: isDark ? cs.surfaceVariant : Colors.blue.shade50,
+                                    //         borderRadius: BorderRadius.circular(12),
+                                    //         border: Border.all(
+                                    //             color: isDark ? cs.outlineVariant : Colors.blue.shade200
+                                    //         )
+                                    //     ),
+                                    //     child: Row(
+                                    //         children: [
+                                    //             Image.asset("assets/images/fast_delivery.png", height: 50),
+                                    //
+                                    //             const SizedBox(width: 15),
+                                    //             Expanded(
+                                    //                 child: Column(
+                                    //                     crossAxisAlignment: CrossAxisAlignment.start,
+                                    //                     children: [
+                                    //                         Text(
+                                    //                             context.tr('txt_delivery_available'),
+                                    //                             style: tt.bodyMedium?.copyWith(
+                                    //                                 fontWeight: FontWeight.w600,
+                                    //                                 color: cs.onSurface
+                                    //                             )
+                                    //                         ),
+                                    //                       Column(
+                                    //                         crossAxisAlignment: CrossAxisAlignment.start,
+                                    //                         children: [
+                                    //                           Text(
+                                    //                             '${getDeliveryTypeText(product)} • ${getDeliveryShortTime(product)}',
+                                    //                             style: tt.bodySmall?.copyWith(
+                                    //                               color: Colors.green,
+                                    //                               fontWeight: FontWeight.w700,
+                                    //                             ),
+                                    //                           ),
+                                    //                           const SizedBox(height: 3),
+                                    //                           Text(
+                                    //                             '${_getDeliveryPriceText(product)} • ${getDeliveryEta(product)}',
+                                    //                             style: tt.bodySmall?.copyWith(
+                                    //                               color: cs.onSurfaceVariant,
+                                    //                             ),
+                                    //                           ),
+                                    //                         ],
+                                    //                       )
+                                    //                     ]
+                                    //                 )
+                                    //             )
+                                    //         ]
+                                    //     )
+                                    // ),
+                                    const SizedBox(height: 18),
                                     // Combination selectors
                                     if (_cachedProductData!.data.combinations.isNotEmpty) ...[
                                         _buildCombinationSelectors(),
-                                        const SizedBox(height: 24)
+                                        // const SizedBox(height: )
                                     ],
                                     // Other Sellers section
                                     _buildOtherSellersSection(),
@@ -1685,54 +1754,52 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     ),
                                     const SizedBox(height: 24),
                                     // Related Products
-                                    if (relatedProducts.isNotEmpty) ...[
-                                        Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
-                                                Text(
-                                                    context.tr('txt_related_products'),
-                                                    style: tt.titleMedium?.copyWith(
-                                                        fontWeight: FontWeight.bold,
-                                                        color: cs.onSurface
-                                                    )
-                                                ),
-                                                Text(
-                                                    '${relatedProducts.length} ${context.tr('txt_items')}',
-                                                    style: tt.bodySmall?.copyWith(
-                                                        color: cs.onSurfaceVariant
-                                                    )
-                                                )
-                                            ]
+                                  if (_categoryRelatedProducts.isNotEmpty) ...[
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          context.tr('txt_related_products'),
+                                          style: tt.titleMedium?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: cs.onSurface,
+                                          ),
                                         ),
-                                        const SizedBox(height: 12),
-                                        SizedBox(
-                                            height: 280,
-                                            child: ListView.separated(
-                                                scrollDirection: Axis.horizontal,
-                                                itemCount: relatedProducts.length,
-                                                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                                                itemBuilder: (_, i) {
-                                                    final product = relatedProducts[i];
+                                        Text(
+                                          '${_categoryRelatedProducts.length} ${context.tr('txt_items')}',
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    SizedBox(
+                                      height: 280,
+                                      child: ListView.separated(
+                                        scrollDirection: Axis.horizontal,
+                                        itemCount: _categoryRelatedProducts.length,
+                                        separatorBuilder: (_, __) => const SizedBox(width: 12),
+                                        itemBuilder: (_, i) {
+                                          final product = _categoryRelatedProducts[i];
 
-                                                    return SizedBox(
-                                                        width: 170,
-                                                        child: ProductCardWidget(
-                                                            product: product.toProductModel(),
-                                                            onTap: () {
-                                                                Navigator.pushReplacement(
-                                                                    context,
-                                                                    MaterialPageRoute(
-                                                                        builder: (_) => ProductDetailScreen(
-                                                                            productId: product.id
-                                                                        )
-                                                                    )
-                                                                );
-                                                            }
-                                                        )
-                                                    );
-                                                }
-                                            )
-                                        ),
+                                          return SizedBox(
+                                            width: 170,
+                                            child: ProductCardWidget(
+                                              product: product,
+                                              onTap: () {
+                                                Navigator.pushReplacement(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) => ProductDetailScreen(
+                                                      productId: product.id,
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+
                                         const SizedBox(height: 100)
                                     ]
                                 ]
@@ -1874,7 +1941,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                         ),
                                         if (hasDiscount) ...[
                                             Text(
-                                                '₮${(originalPrice * quantity).toInt()}',
+                                                '${(originalPrice * quantity).toInt()} c.',
                                                 style: tt.bodySmall?.copyWith(
                                                     fontSize: 12,
                                                     color: cs.onSurfaceVariant,
@@ -1903,7 +1970,30 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 height: 56,
                                 child: ElevatedButton.icon(
                                     onPressed: canAddToCart
-                                        ? () => _handleAddToCart(product)
+                                        ? () async {
+                                      final token = await AuthStorage.getToken();
+
+                                      if (token == null || token.isEmpty) {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => LoginRequiredScreen(
+                                              onLogin: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) => AuthScreen(),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                        );
+                                        return;
+                                      }
+
+                                      _handleAddToCart(product);
+                                    }
                                         : null,
                                     icon: _isAddingToCart
                                         ? SizedBox(
@@ -2562,14 +2652,14 @@ class _QtyPill extends StatelessWidget {
                                             : cs.onSurface
                                     )
                                 ),
-                                if (maxQuantity < 999 && !isOutOfStock)
-                                Text(
-                                    '${context.tr('txt_max')} $maxQuantity',
-                                    style: TextStyle(
-                                        fontSize: 9,
-                                        color: Colors.grey.shade500
-                                    )
-                                )
+                                // if (maxQuantity < 999 && !isOutOfStock)
+                                // Text(
+                                //     '${context.tr('txt_max')} $maxQuantity',
+                                //     style: TextStyle(
+                                //         fontSize: 9,
+                                //         color: Colors.grey.shade500
+                                //     )
+                                // )
                             ]
                         )
                     ),

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:ecom/services/api_service.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../services/auth_service.dart';
 import '../../bottombar/model/product_model.dart';
@@ -9,59 +8,47 @@ import '../../bottombar/model/product_model.dart';
 class ProductSearchApi {
   static const String baseUrl = ApiService.baseUrl;
 
+  /// OLD API - product search
   Future<List<ProductModel>> searchProducts({
     required String query,
     String? city,
     String? country,
-
-    // ✅ ADD THESE
     String? deliveryCity,
     String? deliveryType,
     int? deliveryTimeValue,
     String? deliveryTimeUnit,
   }) async {
-
     if (query.trim().isEmpty && city == null && country == null) {
       return [];
     }
 
-    final prefs = await SharedPreferences.getInstance();
     final token = await AuthStorage.getToken();
 
-    /// 🔹 Build query parameters
-    final Map<String, String> queryParams = {
-      if (query.trim().isNotEmpty) "search": query,
-      if (city != null && city.isNotEmpty) "city": city,
-      if (country != null && country.isNotEmpty) "country": country,
+    final uri = Uri.parse("$baseUrl/customer/products/search").replace(
+      queryParameters: {
+        if (query.trim().isNotEmpty) "search": query.trim(),
+        if (city != null && city.trim().isNotEmpty) "city": city.trim(),
+        if (country != null && country.trim().isNotEmpty) "country": country.trim(),
+        if (deliveryCity != null && deliveryCity.trim().isNotEmpty)
+          "delivery_city": deliveryCity.trim(),
+        if (deliveryType != null && deliveryType.trim().isNotEmpty)
+          "delivery_type": deliveryType.trim(),
+        if (deliveryTimeValue != null)
+          "delivery_time_value": deliveryTimeValue.toString(),
+        if (deliveryTimeUnit != null && deliveryTimeUnit.trim().isNotEmpty)
+          "delivery_time_unit": deliveryTimeUnit.trim(),
+      },
+    );
 
-      // ✅ ADD DELIVERY FILTERS
-      if (deliveryCity != null && deliveryCity.isNotEmpty)
-        "delivery_city": deliveryCity,
+    print("Product Search URI: ${Uri.decodeFull(uri.toString())}");
 
-      if (deliveryType != null && deliveryType.isNotEmpty)
-        "delivery_type": deliveryType,
-
-      if (deliveryTimeValue != null)
-        "delivery_time_value": deliveryTimeValue.toString(),
-
-      if (deliveryTimeUnit != null && deliveryTimeUnit.isNotEmpty)
-        "delivery_time_unit": deliveryTimeUnit,
-    };
-
-    /// 🔹 Build URI
-    final uri = Uri.parse(
-      "$baseUrl/customer/products/search",
-    ).replace(queryParameters: queryParams);
-
-    print("Search URI: $uri");
-
-    /// 🔹 Headers (token only if available)
-    final headers = {
-      "Content-Type": "application/json",
-      if (token != null) "Authorization": "Bearer $token",
-    };
-
-    final response = await http.get(uri, headers: headers);
+    final response = await http.get(
+      uri,
+      headers: {
+        "Content-Type": "application/json",
+        if (token != null && token.isNotEmpty) "Authorization": "Bearer $token",
+      },
+    );
 
     final body = jsonDecode(response.body);
 
@@ -74,25 +61,53 @@ class ProductSearchApi {
     throw Exception(body['message'] ?? "Search failed");
   }
 
-  /// 🔹 Search products with just city filter
-  Future<List<ProductModel>> getProductsByCity({
-    required String city,
-    String? country,
-  }) async {
-    return searchProducts(query: "", city: city, country: country);
-  }
-
-  /// 🔹 Search products with just country filter
-  Future<List<ProductModel>> getProductsByCountry(String country) async {
-    return searchProducts(query: "", country: country);
-  }
-
-  /// 🔹 Search products with query and location
-  Future<List<ProductModel>> searchProductsInLocation({
+  /// NEW API - category + store search
+  Future<Map<String, dynamic>> globalSearch({
     required String query,
-    required String city,
-    String? country,
+    String? deliveryCity,
+    String? deliveryType,
+    int? deliveryTimeValue,
+    String? deliveryTimeUnit,
   }) async {
-    return searchProducts(query: query, city: city, country: country);
+    if (query.trim().isEmpty) return {};
+
+    final token = await AuthStorage.getToken();
+
+    final uri = Uri.parse("$baseUrl/global-search").replace(
+      queryParameters: {
+        "search": query.trim(),
+
+        if (deliveryCity != null && deliveryCity.isNotEmpty)
+          "delivery_city": deliveryCity,
+
+        if (deliveryType != null && deliveryType.isNotEmpty)
+          "delivery_type": deliveryType,
+
+        if (deliveryTimeValue != null)
+          "delivery_time_value": deliveryTimeValue.toString(),
+
+        if (deliveryTimeUnit != null && deliveryTimeUnit.isNotEmpty)
+          "delivery_time_unit": deliveryTimeUnit,
+      },
+    );
+
+    print("Global Search URI: ${Uri.decodeFull(uri.toString())}");
+
+    final response = await http.get(
+      uri,
+      headers: {
+        "Content-Type": "application/json",
+        if (token != null && token.isNotEmpty)
+          "Authorization": "Bearer $token",
+      },
+    );
+
+    final body = jsonDecode(response.body);
+
+    if (response.statusCode == 200 && body['status'] == true) {
+      return Map<String, dynamic>.from(body['data'] ?? {});
+    }
+
+    return {};
   }
 }

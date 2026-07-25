@@ -159,12 +159,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.trRead('profile_updated_success')),
-            backgroundColor: Colors.green,
-          ),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(
+        //     content: Text(context.trRead('profile_updated_success')),
+        //     backgroundColor: Colors.green,
+        //   ),
+        // );
       }
 
       await AuthStorage.saveName(nameCtrl.text);

@@ -34,22 +34,13 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _showOtp = false;
   int _secondsLeft = 60;
   Timer? _timer;
-
-  void _startTimer() {
-    _timer?.cancel();
-    setState(() => _secondsLeft = 60);
-    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (_secondsLeft == 0) {
-        t.cancel();
-      } else {
-        setState(() => _secondsLeft--);
-      }
-    });
-  }
+  int _phoneLength = 0;
+  final ValueNotifier<int> _otpSeconds = ValueNotifier<int>(60);
 
   @override
   void dispose() {
     _timer?.cancel();
+    _otpSeconds.dispose();
     _phoneController.dispose();
     _otpController.dispose();
     super.dispose();
@@ -100,6 +91,71 @@ class _AuthScreenState extends State<AuthScreen> {
     return "unknown";
   }
 
+  void _startTimer() {
+    _timer?.cancel();
+
+    _secondsLeft = 60;
+    _otpSeconds.value = 60;
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (_secondsLeft <= 0) {
+        t.cancel();
+        _otpSeconds.value = 0;
+      } else {
+        _secondsLeft--;
+        _otpSeconds.value = _secondsLeft;
+      }
+    });
+  }
+
+  Future<void> _resendOtp(VoidCallback refreshSheet) async {
+    if (_rawPhoneNumber.isEmpty) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+
+      if (token != null) {
+        await AuthStorage.saveFcmToken(token);
+      }
+
+      final deviceId = await getDeviceId();
+      final deviceType = await getDeviceType();
+
+      final response = await http.post(
+        Uri.parse('${ApiService.baseUrl}/customer/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "phone_number": _rawPhoneNumber,
+          "device_type": deviceType,
+          "device_id": deviceId,
+          "fcm_token": token,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (data['status'] == true) {
+        _otpController.clear();
+
+        ApiService.isBebugmode ? _showOtpToast(data['data']['otp'].toString()): null;
+
+        setState(() => _isLoading = false);
+
+        _startTimer();
+      } else {
+        throw data['message'];
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
   Future<void> _requestOtp() async {
     if (_rawPhoneNumber.isEmpty || _rawPhoneNumber.length < 8) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -132,7 +188,7 @@ class _AuthScreenState extends State<AuthScreen> {
       final data = jsonDecode(response.body);
 
       if (data['status'] == true) {
-        _showOtpToast(data['data']['otp'].toString());
+        ApiService.isBebugmode ? _showOtpToast(data['data']['otp'].toString()): null;
 
         setState(() {
           _isLoading = false;
@@ -236,12 +292,12 @@ class _AuthScreenState extends State<AuthScreen> {
       final response = await http.post(
         Uri.parse('${ApiService.baseUrl}/customer/verify-otp'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(
-            {"phone_number": _rawPhoneNumber,
+        body: jsonEncode({
+          "phone_number": _rawPhoneNumber,
           "otp": code,
-              "device_type": deviceType,
-              "device_id": deviceId,
-            }),
+          "device_type": deviceType,
+          "device_id": deviceId,
+        }),
       );
 
       final data = jsonDecode(response.body);
@@ -256,8 +312,7 @@ class _AuthScreenState extends State<AuthScreen> {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const SimpleBottomNavScreen()),
-              (route) => false,
-
+          (route) => false,
         );
       } else {
         throw data['message'];
@@ -278,179 +333,225 @@ class _AuthScreenState extends State<AuthScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+
+      // User can't accidentally close OTP sheet
+      isDismissible: false,
+      enableDrag: false,
+
       backgroundColor: cs.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: 20 + MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 38,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: cs.outlineVariant,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                FocusScope.of(context).unfocus();
+              },
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 20,
+                  bottom: 20 + MediaQuery.of(context).viewInsets.bottom,
                 ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                context.tr('verify_otp'),
-                style: tt.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: cs.onSurface,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                '${context.tr('txt_code_sent_to')} ${_phoneController.text}',
-                style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
-              ),
-              const SizedBox(height: 16),
-
-              // Option A: Native 6 TextFields in one with inputFormatters
-              TextField(
-                controller: _otpController,
-                keyboardType: TextInputType.number,
-                maxLength: 6,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                textAlign: TextAlign.center,
-                style: tt.headlineSmall?.copyWith(
-                  letterSpacing: 8,
-                  fontWeight: FontWeight.w700,
-                  color: cs.onSurface,
-                ),
-                decoration: InputDecoration(
-                  counterText: '',
-                  hintText: '••••••',
-                  filled: true,
-                  fillColor: cs.surfaceContainerHighest,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: cs.outlineVariant),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: cs.outlineVariant),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: cs.primary, width: 1.4),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-              ),
-
-              // Option B: Pinput (uncomment if using package)
-              /*
-              Pinput(
-                controller: _otpController,
-                length: 6,
-                defaultPinTheme: PinTheme(
-                  width: 48,
-                  height: 56,
-                  textStyle: tt.titleLarge?.copyWith(color: cs.onSurface, fontWeight: FontWeight.w700),
-                  decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: cs.outlineVariant),
-                  ),
-                ),
-                focusedPinTheme: PinTheme(
-                  width: 48,
-                  height: 56,
-                  textStyle: tt.titleLarge?.copyWith(color: cs.onSurface, fontWeight: FontWeight.w700),
-                  decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: cs.primary, width: 1.5),
-                  ),
-                ),
-                onCompleted: (v) => _verifyOtpAndLogin(),
-              ),
-              */
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(
-                    Icons.timer_outlined,
-                    size: 18,
-                    color: cs.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _secondsLeft > 0
-                        ? '${context.tr('txt_resend_to')}:${_secondsLeft.toString().padLeft(2, '0')}'
-                        : context.tr('txt_did_no_get'),
-                    style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: _secondsLeft == 0
-                        ? () {
-                            _startTimer();
-                            // TODO: re-request code from backend
-                          }
-                        : null,
-                    child: Text(
-                      context.tr('txt_resend'),
-                      style: tt.labelLarge?.copyWith(
-                        color: _secondsLeft == 0
-                            ? (isDark ? Colors.white : Colors.black)
-                            : cs.onSurfaceVariant,
-                        fontWeight: FontWeight.w700,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 38,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: cs.outlineVariant,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
 
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _verifyOtpAndLogin,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isDark ? Colors.white : Colors.black,
-                    foregroundColor: isDark ? Colors.black : Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _isLoading
-                      ? SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: isDark ? Colors.black : Colors.white,
-                          ),
-                        )
-                      : Text(
-                          context.tr('txt_verify_continue'),
-                          style: tt.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.black : Colors.white,
+                    const SizedBox(height: 18),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            "",
+                            style: tt.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: cs.onSurface,
+                            ),
                           ),
                         ),
+                        IconButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    Text(
+                      '${context.tr('txt_code_sent_to')} ${_phoneController.text}',
+                      style: tt.bodyMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    TextField(
+                      controller: _otpController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      textAlign: TextAlign.center,
+                      style: tt.headlineSmall?.copyWith(
+                        letterSpacing: 8,
+                        fontWeight: FontWeight.w700,
+                        color: cs.onSurface,
+                      ),
+                      decoration: InputDecoration(
+                        counterText: '',
+                        hintText: '••••••',
+                        filled: true,
+                        fillColor: cs.surfaceContainerHighest,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: cs.outlineVariant),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: cs.outlineVariant),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: cs.primary, width: 1.4),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                        ),
+                      ),
+                      onChanged: (_) {
+                        setSheetState(() {});
+                      },
+                      onSubmitted: (_) {
+                        _verifyOtpAndLogin();
+                      },
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    ValueListenableBuilder<int>(
+                      valueListenable: _otpSeconds,
+                      builder: (context, seconds, _) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: cs.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: cs.outlineVariant),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                seconds > 0
+                                    ? Icons.timer_outlined
+                                    : Icons.refresh_rounded,
+                                size: 18,
+                                color: cs.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  seconds > 0
+                                      ? '${context.tr('txt_resend_to')} ${seconds.toString().padLeft(2, '0')}s'
+                                      : context.tr('txt_did_no_get'),
+                                  style: tt.bodyMedium?.copyWith(
+                                    color: cs.onSurfaceVariant,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: seconds == 0 && !_isLoading
+                                    ? () {
+                                        _resendOtp(() {});
+                                      }
+                                    : null,
+                                child: _isLoading && seconds == 0
+                                    ? const SizedBox(
+                                        height: 16,
+                                        width: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : Text(
+                                        context.tr('txt_resend'),
+                                        style: tt.labelLarge?.copyWith(
+                                          color: seconds == 0
+                                              ? (isDark
+                                                    ? Colors.white
+                                                    : Colors.black)
+                                              : cs.onSurfaceVariant,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 18),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _verifyOtpAndLogin,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isDark ? Colors.white : Colors.black,
+                          foregroundColor: isDark ? Colors.black : Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: _isLoading
+                            ? SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: isDark ? Colors.black : Colors.white,
+                                ),
+                              )
+                            : Text(
+                                context.tr('txt_verify_continue'),
+                                style: tt.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark ? Colors.black : Colors.white,
+                                ),
+                              ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -461,20 +562,29 @@ class _AuthScreenState extends State<AuthScreen> {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: cs.background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        backgroundColor: cs.background,
+        appBar: AppBar(),
+        body: SafeArea(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // const SizedBox(height: 40),
-Row(mainAxisAlignment: MainAxisAlignment.center,
-  children: [
-    Image.asset("assets/images/logo_bg_remove.png",height: 200,),
-  ],
-),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    "assets/images/logo_bg_remove.png",
+                    height: 150,
+                  ),
+                ],
+              ),
               // Welcome Header
               // Text(
               //   context.tr('txt_welcome_back'),
@@ -513,15 +623,15 @@ Row(mainAxisAlignment: MainAxisAlignment.center,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      context.tr('txt_phone_number'),
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: cs.onSurface.withOpacity(0.7),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
+                    // Text(
+                    //   context.tr('txt_phone_number'),
+                    //   style: TextStyle(
+                    //     fontSize: 14,
+                    //     fontWeight: FontWeight.w600,
+                    //     color: cs.onSurface.withOpacity(0.7),
+                    //   ),
+                    // ),
+                    // const SizedBox(height: 12),
 
                     // Phone Input
 
@@ -530,8 +640,14 @@ Row(mainAxisAlignment: MainAxisAlignment.center,
                       controller: _phoneController,
                       initialCountryCode: 'TJ',
 
-                      disableLengthCheck: true, // keep this if you want custom validation
-
+                      disableLengthCheck:
+                          true, // keep this if you want custom validation
+                      inputFormatters: ApiService.isBebugmode
+                          ? null
+                          : [
+                        LengthLimitingTextInputFormatter(9),
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
                       countries: const [
                         Country(
                           name: "Tajikistan",
@@ -542,54 +658,74 @@ Row(mainAxisAlignment: MainAxisAlignment.center,
                           flag: "🇹🇯",
                           code: "TJ",
                           dialCode: "992",
-                          minLength: ApiService.isBebugmode == true? 10: 9,
-                          maxLength: ApiService.isBebugmode == true? 10: 9,
+                          minLength: ApiService.isBebugmode == true ? 10 : 9,
+                          maxLength: ApiService.isBebugmode == true ? 10 : 9,
                         ),
-                        Country(
-                          name: "Russia",
-                          nameTranslations: {"en": "Russia", "ru": "Россия"},
-                          flag: "🇷🇺",
-                          code: "RU",
-                          dialCode: "7",
-                          minLength: ApiService.isBebugmode == true? 10: 9,
-                          maxLength: ApiService.isBebugmode == true? 10: 9,
-                        ),
+                        // Country(
+                        //   name: "Russia",
+                        //   nameTranslations: {"en": "Russia", "ru": "Россия"},
+                        //   flag: "🇷🇺",
+                        //   code: "RU",
+                        //   dialCode: "7",
+                        //   minLength: ApiService.isBebugmode == true? 10: 9,
+                        //   maxLength: ApiService.isBebugmode == true? 10: 9,
+                        // ),
                       ],
 
                       showDropdownIcon: false,
 
                       decoration: InputDecoration(
-                        labelText: context.tr('txt_phone_number'),
-                        hintText: '900 12 34 56',
+                        // labelText: context.tr('txt_phone_number'),
+                        // hintText: context.tr('txt_phone_number'),
                         filled: true,
                         fillColor: cs.surfaceContainerLow,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
+
+                        suffixIcon: Padding(
+                          padding: const EdgeInsets.only(right: 14),
+                          child: Center(
+                            widthFactor: 1,
+                            child: Text(
+                              '$_phoneLength/9',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: _phoneLength == 9
+                                    ? Colors.black
+                                    : Colors.black,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
 
-                      /// ✅ VALIDATION
-                      validator: (phone) {
-                        if (phone == null || phone.number.isEmpty) {
-                          return context.tr('hint_phone_number_required');
-                        }
-
-                        final min = ApiService.isBebugmode ? 10 : 9;
-                        final max = ApiService.isBebugmode ? 10 : 9;
-
-                        if (phone.number.length < min || phone.number.length > max) {
-                          return 'Enter $min digit phone number';
-                        }
-
-                        return null;
-                      },
-
+                      //
+                      // /// ✅ VALIDATION
+                      // validator: (phone) {
+                      //   if (phone == null || phone.number.isEmpty) {
+                      //     return context.tr('hint_phone_number_required');
+                      //   }
+                      //
+                      //   final min = ApiService.isBebugmode ? 10 : 9;
+                      //   final max = ApiService.isBebugmode ? 10 : 9;
+                      //
+                      //   if (phone.number.length < min || phone.number.length > max) {
+                      //     return 'Enter $min digit phone number';
+                      //   }
+                      //
+                      //   return null;
+                      // },
                       onChanged: (phone) {
-                        _rawPhoneNumber = phone.number;
+                        setState(() {
+                          _rawPhoneNumber = phone.number;
+                          _phoneLength = phone.number.length;
+                        });
                       },
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 36),
 
                     // Login Button -> requests OTP then shows sheet
                     SizedBox(
@@ -598,8 +734,12 @@ Row(mainAxisAlignment: MainAxisAlignment.center,
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _requestOtp,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: isDark ? Colors.white : Colors.black,
-                          foregroundColor: isDark ? Colors.black : Colors.white,
+                          backgroundColor: isDark
+                              ? Colors.white
+                              : Colors.black,
+                          foregroundColor: isDark
+                              ? Colors.black
+                              : Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -626,7 +766,7 @@ Row(mainAxisAlignment: MainAxisAlignment.center,
 
                     const SizedBox(height: 12),
 
-                    // Or continue text
+                    // // Or continue text
                     // Row(
                     //   children: [
                     //     Expanded(child: Divider(color: cs.outlineVariant)),
@@ -640,7 +780,7 @@ Row(mainAxisAlignment: MainAxisAlignment.center,
                     //     Expanded(child: Divider(color: cs.outlineVariant)),
                     //   ],
                     // ),
-
+                    //
                     // const SizedBox(height: 12),
                     //
                     // // Skip Button
