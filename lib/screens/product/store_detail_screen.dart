@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 // import 'package:url_launcher/url_launcher.dart';
 import '../../services/api_service.dart';
+import '../../services/store_share_service.dart';
 import '../search/product_search_screen.dart';
 import 'controller/store_detil_service.dart';
 import 'model/store_detail.dart';
@@ -298,7 +299,17 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
         const SizedBox(width: 8),
         Padding(
           padding: const EdgeInsets.only(right: 12, top: 8, bottom: 8),
-          child: _glassIconBtn(Icons.ios_share_rounded),
+          child: GestureDetector(
+            onTap: () {
+              final rawName =
+                  (store.name?.toString() ?? widget.storeName ?? '').trim();
+              StoreShareService.shareStore(
+                storeId: widget.storeId,
+                storeName: rawName.isNotEmpty ? rawName : 'inBozor Store',
+              );
+            },
+            child: _glassIconBtn(Icons.ios_share_rounded),
+          ),
         ),
       ],
       flexibleSpace: FlexibleSpaceBar(
@@ -1314,18 +1325,23 @@ class _StoreDetailsPageState extends State<StoreDetailsPage>
         //           fontWeight: FontWeight.w600)),
         // ),
         const SizedBox(width: 8),
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: _isDark
-                ? Colors.white.withOpacity(0.12)
-                : Colors.black.withOpacity(0.07),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(Icons.ios_share_rounded,
-              color: _textColor, size: 18),
-        ),
+        // InkWell(
+        //   onTap: (){
+        //
+        //   },
+        //   child: Container(
+        //     width: 40,
+        //     height: 40,
+        //     decoration: BoxDecoration(
+        //       color: _isDark
+        //           ? Colors.white.withOpacity(0.12)
+        //           : Colors.black.withOpacity(0.07),
+        //       shape: BoxShape.circle,
+        //     ),
+        //     child: Icon(Icons.ios_share_rounded,
+        //         color: _textColor, size: 18),
+        //   ),
+        // ),
       ],
     ),
   );

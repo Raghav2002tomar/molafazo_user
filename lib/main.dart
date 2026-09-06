@@ -16,6 +16,9 @@ import 'providers/product_provider.dart';
 import 'providers/cart_provider.dart';
 import 'screens/product/product_list_screen.dart';
 import 'services/storage_service.dart';
+import 'services/product_cache_service.dart';
+import 'services/deep_link_service.dart';
+import 'services/meta_analytics_service.dart';
 
 final GlobalKey<ScaffoldMessengerState> rootMessengerKey =
 GlobalKey<ScaffoldMessengerState>();
@@ -30,6 +33,10 @@ void main() async {
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   await Hive.initFlutter();
   // await StorageService.init();
+  await ProductCacheService.init();
+
+  // Meta App Events (Ads Manager attribution) — non-blocking for splash UX
+  await MetaAnalyticsService.instance.initialize();
 
   final translateProvider = TranslateProvider();
   await translateProvider.init(); // Load saved language
@@ -67,9 +74,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final mode = context.watch<ThemeProvider>().mode;
     final locale = context.watch<TranslateProvider>().locale; // optional: use locale
-    // Initialize notification handler after build
+    // Initialize notification handler + deep links after build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       NotificationHandler().init(context);
+      DeepLinkService.instance.init();
     });
     final lightTheme = AppTheme.light();
     final darkTheme = AppTheme.dark();

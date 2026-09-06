@@ -2,6 +2,7 @@ import 'package:ecom/extensions/context_extension.dart';
 import 'package:ecom/screens/bottombar/widget/product_card_widget.dart';
 import 'package:ecom/screens/bottombar/widget/store_card_widget.dart';
 import 'package:ecom/services/api_service.dart';
+import 'package:ecom/services/product_cache_service.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
@@ -137,11 +138,24 @@ class _HomeScreenState extends State<HomeScreen> {
     _fetchAllProducts();
   }
 
-  /// Fetch all products initially
+  /// Fetch all products — show cache instantly, refresh API in background.
   Future<void> _fetchAllProducts() async {
-    try {
-      isLoading.value = true;
+    final cached = await ProductService.getCachedAllProducts(
+      deliveryCity: selectedCity,
+      deliveryType: deliveryType,
+      deliveryTimeValue: deliveryTimeValue,
+      deliveryTimeUnit: deliveryTimeUnit,
+    );
 
+    final hasCache = cached != null && cached.isNotEmpty;
+    if (hasCache) {
+      products.value = cached;
+      isLoading.value = false;
+    } else {
+      isLoading.value = true;
+    }
+
+    try {
       final result = await ProductService.fetchAllProducts(
         deliveryCity: selectedCity,
         deliveryType: deliveryType,
@@ -149,20 +163,43 @@ class _HomeScreenState extends State<HomeScreen> {
         deliveryTimeUnit: deliveryTimeUnit,
       );
 
-      products.value = result;
+      // Update UI only when data actually changed (avoids flicker)
+      if (!hasCache ||
+          ProductCacheService.productListChanged(cached, result)) {
+        products.value = result;
+      }
     } catch (e) {
-      products.value = [];
+      // Keep showing cached data on network failure
+      if (!hasCache) {
+        products.value = [];
+      }
       debugPrint("Error fetching products: $e");
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// Fetch filtered products when category/subcategory/child selected
+  /// Fetch filtered products — cache first, then silent background refresh.
   Future<void> _fetchFilteredProducts() async {
-    try {
-      isLoading.value = true;
+    final cached = await ProductService.getCachedProducts(
+      categoryId: selectedCategoryId.value,
+      subCategoryId: selectedSubCategoryId.value,
+      childCategoryId: selectedChildCategoryId.value,
+      deliveryCity: deliveryCity,
+      deliveryType: deliveryType,
+      deliveryTimeValue: deliveryTimeValue,
+      deliveryTimeUnit: deliveryTimeUnit,
+    );
 
+    final hasCache = cached != null && cached.isNotEmpty;
+    if (hasCache) {
+      products.value = cached;
+      isLoading.value = false;
+    } else {
+      isLoading.value = true;
+    }
+
+    try {
       final result = await ProductService.fetchProducts(
         categoryId: selectedCategoryId.value,
         subCategoryId: selectedSubCategoryId.value,
@@ -173,9 +210,14 @@ class _HomeScreenState extends State<HomeScreen> {
         deliveryTimeUnit: deliveryTimeUnit,
       );
 
-      products.value = result;
+      if (!hasCache ||
+          ProductCacheService.productListChanged(cached, result)) {
+        products.value = result;
+      }
     } catch (e) {
-      products.value = [];
+      if (!hasCache) {
+        products.value = [];
+      }
       debugPrint("Error fetching filtered products: $e");
     } finally {
       isLoading.value = false;

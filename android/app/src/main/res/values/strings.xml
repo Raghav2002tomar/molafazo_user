@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">inBozor</string>
+    <!-- Meta / Facebook App Events — keep in sync with lib/services/meta_config.dart and ios/Runner/Info.plist -->
+    <string name="facebook_app_id">1613586687027233</string>
+    <string name="facebook_client_token">ad9344f62a68f2148b66372ea4921ede</string>
+    <string name="fb_login_protocol_scheme">fb1613586687027233</string>
+</resources>

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/auth_service.dart';
+import '../../services/deep_link_service.dart';
 import '../auth/LoginScreen.dart';
 import '../bottombar/MainScreen.dart';
 
@@ -24,7 +25,14 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
     await Future.delayed(const Duration(seconds: 2));
 
     final isLoggedIn = await AuthStorage.isLoggedIn();
+    if (!mounted) return;
+
     Navigator.push(context, MaterialPageRoute(builder: (context)=>SimpleBottomNavScreen()));
+
+    // Open product detail if app was launched from a shared link
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      DeepLinkService.instance.flushPending();
+    });
 
     // if (!mounted) return;
 

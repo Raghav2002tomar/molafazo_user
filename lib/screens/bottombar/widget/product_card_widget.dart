@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import '../../../providers/cart_provider.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service.dart';
+import '../../../services/meta_analytics_service.dart';
+import '../../../services/meta_config.dart';
 import '../../../widgets/login_required_screen.dart';
 import '../../auth/LoginScreen.dart';
 import '../../cart/controller/cart_services.dart';
@@ -131,6 +133,19 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
       );
 
       if (res["status"] == true) {
+        final unit = MetaAnalyticsService.parseAmount(
+              widget.product.discountPrice ?? widget.product.price,
+            ) ??
+            0;
+        MetaAnalyticsService.instance.logAddToCart(
+          contentId: productId.toString(),
+          contentType: 'product',
+          contentName: widget.product.name,
+          value: unit * quantity,
+          quantity: quantity,
+          currency: MetaConfig.currency,
+        );
+
         if (mounted) {
           context.read<CartProvider>().refreshCart();
           // ScaffoldMessenger.of(context).showSnackBar(

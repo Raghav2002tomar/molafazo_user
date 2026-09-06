@@ -13,6 +13,7 @@ import 'package:intl_phone_field/intl_phone_field.dart';
 import '../../main.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/meta_analytics_service.dart';
 import '../bottombar/MainScreen.dart';
 import 'SignUpScreen.dart';
 
@@ -306,6 +307,10 @@ class _AuthScreenState extends State<AuthScreen> {
         _apiToken = data['data']['api_token'];
 
         await AuthStorage.saveLogin(_apiToken!);
+
+        // Meta Ads: login + first-time registration (no PII)
+        unawaited(MetaAnalyticsService.instance.logLogin());
+        unawaited(MetaAnalyticsService.instance.logRegistration());
 
         // TODO: Save token securely (SharedPreferences / SecureStorage)
 

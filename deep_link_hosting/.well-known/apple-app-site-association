@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "L7Q4D4F69G.com.inbozor.user",
+        "paths": [
+          "/product/*",
+          "/store/*"
+        ]
+      }
+    ]
+  }
+}

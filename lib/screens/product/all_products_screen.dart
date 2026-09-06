@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../services/api_service.dart';
+import '../../services/product_cache_service.dart';
 import '../bottombar/controller/CityService.dart';
 import '../bottombar/controller/category_service.dart';
 import '../bottombar/controller/product_services.dart';
@@ -76,9 +77,26 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
   }
 
   Future<void> _fetchProducts() async {
-    try {
-      setState(() => isLoading = true);
+    final cached = await ProductService.getCachedProducts(
+      categoryId: selectedCategoryId,
+      subCategoryId: selectedSubCategoryId,
+      childCategoryId: selectedChildCategoryId,
+      city: selectedCity,
+      country: selectedCountry,
+    );
 
+    final hasCache = cached != null && cached.isNotEmpty;
+    if (hasCache) {
+      setState(() {
+        products = cached;
+        _applySortAndFilter();
+        isLoading = false;
+      });
+    } else {
+      setState(() => isLoading = true);
+    }
+
+    try {
       final result = await ProductService.fetchProducts(
         categoryId: selectedCategoryId,
         subCategoryId: selectedSubCategoryId,
@@ -87,15 +105,26 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
         country: selectedCountry,
       );
 
-      setState(() {
-        products = result;
-        _applySortAndFilter();
-        isLoading = false;
-      });
+      if (!mounted) return;
 
+      final shouldUpdate = !hasCache ||
+          ProductCacheService.productListChanged(cached, result);
+
+      if (shouldUpdate) {
+        setState(() {
+          products = result;
+          _applySortAndFilter();
+          isLoading = false;
+        });
+      } else {
+        setState(() => isLoading = false);
+      }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        products = [];
+        if (!hasCache) {
+          products = [];
+        }
         isLoading = false;
       });
     }

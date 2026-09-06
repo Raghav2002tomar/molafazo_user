@@ -1715,6 +1715,8 @@ import 'package:provider/provider.dart';
 import '../../models/cart_item.dart' hide CartItem;
 import '../../providers/cart_provider.dart';
 import '../../services/api_service.dart';
+import '../../services/meta_analytics_service.dart';
+import '../../services/meta_config.dart';
 import '../address/address_list_screen.dart';
 import '../address/model/address_model.dart';
 import '../bottombar/MainScreen.dart';
@@ -3345,6 +3347,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       });
 
       if (result['status'] == true) {
+        final orderData = result['data'];
+        final orderId = orderData is Map
+            ? (orderData['id'] ??
+                    orderData['order_id'] ??
+                    orderData['orderId'])
+                ?.toString()
+            : null;
+        final items = cartData?.items ?? [];
+        final amount = MetaAnalyticsService.parseAmount(
+              cartData?.cartTotalAmount,
+            ) ??
+            0;
+        MetaAnalyticsService.instance.logPurchase(
+          amount: amount,
+          currency: MetaConfig.currency,
+          orderId: orderId,
+          numItems: items.fold<int>(0, (sum, item) => sum + item.quantity),
+          contentIdsJson: MetaAnalyticsService.encodeContentIds(
+            items.map((e) => e.productId),
+          ),
+        );
+
         await cart.refreshCart();
 
         if (mounted) {

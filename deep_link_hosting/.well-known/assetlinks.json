@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.inbozor.user",
+      "sha256_cert_fingerprints": [
+        "80:12:70:E3:63:90:F9:21:1D:E6:64:C8:BD:B9:D8:1D:6A:5A:C3:6C:57:E8:FB:3E:99:CA:A4:2D:5A:2A:60:C6",
+        "36:E1:2C:2D:42:69:46:98:E9:21:C8:48:F5:57:75:67:DA:2A:94:C9:B5:92:42:F1:11:A8:F0:16:9E:3D:CA:22"
+      ]
+    }
+  }
+]

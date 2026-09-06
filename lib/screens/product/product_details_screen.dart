@@ -8,6 +8,9 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/meta_analytics_service.dart';
+import '../../services/meta_config.dart';
+import '../../services/product_share_service.dart';
 import '../../providers/cart_provider.dart';
 import '../../widgets/login_required_screen.dart';
 import '../bottombar/BottomNavWrapper.dart';
@@ -61,6 +64,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     List<ProductModel> _categoryRelatedProducts = [];
     bool _isLoadingRelatedProducts = false;
+    bool _viewContentLogged = false;
 
     @override
     void initState() {
@@ -70,9 +74,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
     Future<void> _fetchCategoryRelatedProducts(ProductDetail product) async {
       try {
-        setState(() {
-          _isLoadingRelatedProducts = true;
-        });
+        final cached = await ProductService.getCachedProducts(
+          categoryId: product.category?.id,
+        );
+
+        if (cached != null && cached.isNotEmpty && mounted) {
+          setState(() {
+            _categoryRelatedProducts =
+                cached.where((p) => p.id != product.id).toList();
+            _isLoadingRelatedProducts = false;
+          });
+        } else if (mounted) {
+          setState(() {
+            _isLoadingRelatedProducts = true;
+          });
+        }
 
         final result = await ProductService.fetchProducts(
           categoryId: product.category?.id,
@@ -91,7 +107,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         if (!mounted) return;
 
         setState(() {
-          _categoryRelatedProducts = [];
+          if (_categoryRelatedProducts.isEmpty) {
+            _categoryRelatedProducts = [];
+          }
           _isLoadingRelatedProducts = false;
         });
       }
@@ -280,61 +298,105 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     Future<void> _loadProductData() async {
         try {
-            if (mounted) {
+            // 1) Show cached detail immediately (no loader on revisit)
+            final cached =
+                await ProductDetailService.getCachedProductDetail(widget.productId);
+
+            if (cached != null && mounted) {
                 setState(() {
-                        _isLoading = true;
-                        _errorMessage = null; // Remove context.tr() here
-                    });
+                    _cachedProductData = cached;
+                    _reviews = cached.data.reviews;
+                    _averageRating = cached.data.reviewsAvgRating;
+                    _totalReviews = cached.data.reviewsCount;
+                    if (cached.data.combinations.isNotEmpty) {
+                        _initializeCombinations(cached.data.combinations);
+                    }
+                    isFav = cached.data.isFavorite ?? false;
+                    _selectedSeller = null;
+                    _isLoading = false;
+                    _errorMessage = null;
+                });
+                _logViewContentOnce(cached.data);
+            } else if (mounted) {
+                setState(() {
+                    _isLoading = true;
+                    _errorMessage = null;
+                });
             }
 
+            // 2) Refresh from API in background
             final data = await ProductDetailService.fetchProductDetail(
                 widget.productId
             );
 
             if (data == null) {
-                if (mounted) {
+                if (mounted && _cachedProductData == null) {
                     setState(() {
-                            _isLoading = false;
-                            _errorMessage = 'Failed to load product'; // Use static string
-                        });
+                        _isLoading = false;
+                        _errorMessage = 'Failed to load product';
+                    });
                 }
                 return;
             }
 
             if (mounted) {
+                final alreadyShowing = _cachedProductData != null;
                 setState(() {
-                        _cachedProductData = data;
+                    _cachedProductData = data;
+                    _reviews = data.data.reviews;
+                    _averageRating = data.data.reviewsAvgRating;
+                    _totalReviews = data.data.reviewsCount;
 
-                        // Initialize reviews from product data
-                        _reviews = data.data.reviews;
-                        _averageRating = data.data.reviewsAvgRating;
-                        _totalReviews = data.data.reviewsCount;
+                    // Don't reset user's attribute selection on silent background refresh
+                    if (!alreadyShowing && data.data.combinations.isNotEmpty) {
+                        _initializeCombinations(data.data.combinations);
+                    }
 
-                        // Initialize selected attributes from combinations
-                        if (data.data.combinations.isNotEmpty) {
-                            _initializeCombinations(data.data.combinations);
-                        }
+                    isFav = data.data.isFavorite ?? false;
+                    if (!alreadyShowing) {
+                      _selectedSeller = null;
+                    }
+                    _isLoading = false;
+                    _errorMessage = null;
+                });
 
-                        isFav = data.data.isFavorite ?? false;
-                        _selectedSeller = null;
-                        _isLoading = false;
-                    });
-
-                // Only fetch reviews separately if there are none in the product data
                 if (_reviews.isEmpty) {
                     _fetchReviews();
                 }
+                _logViewContentOnce(data.data);
             }
             await _fetchCategoryRelatedProducts(data.data);
         } catch (e) {
             print('Error in _loadProductData: $e');
-            if (mounted) {
+            if (mounted && _cachedProductData == null) {
                 setState(() {
-                        _isLoading = false;
-                        _errorMessage = e.toString();
-                    });
+                    _isLoading = false;
+                    _errorMessage = e.toString();
+                });
+            } else if (mounted) {
+                setState(() {
+                    _isLoading = false;
+                });
             }
         }
+    }
+
+    void _logViewContentOnce(ProductDetail product) {
+      if (_viewContentLogged) return;
+      _viewContentLogged = true;
+      final price = MetaAnalyticsService.parseAmount(
+            product.discountPrice.isNotEmpty && product.discountPrice != '0.00'
+                ? product.discountPrice
+                : product.price,
+          ) ??
+          0;
+      MetaAnalyticsService.instance.logViewContent(
+        contentId: product.id.toString(),
+        contentType: 'product',
+        contentName: product.name,
+        value: price,
+        currency: MetaConfig.currency,
+      );
     }
 
     void _initializeCombinations(List<ProductCombination> combinations) {
@@ -452,7 +514,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
         setState(() {
                 _selectedSeller = seller;
-                _isLoading = true;
             });
 
         _loadOtherSellerProduct(seller.productId);
@@ -460,13 +521,36 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     Future<void> _loadOtherSellerProduct(int productId) async {
         try {
+            // Show cache instantly if available
+            final cached =
+                await ProductDetailService.getCachedProductDetail(productId);
+
+            if (cached != null && mounted) {
+                setState(() {
+                    _cachedProductData = cached;
+                    _reviews = cached.data.reviews;
+                    _averageRating = cached.data.reviewsAvgRating;
+                    _totalReviews = cached.data.reviewsCount;
+                    _selectedAttributes.clear();
+                    _selectedCombinationId = null;
+                    selectedImageIndex = 0;
+                    if (cached.data.combinations.isNotEmpty) {
+                        _initializeCombinations(cached.data.combinations);
+                    }
+                    isFav = cached.data.isFavorite ?? false;
+                    _isLoading = false;
+                });
+            } else if (mounted) {
+                setState(() {
+                    _isLoading = true;
+                });
+            }
+
             final data = await ProductDetailService.fetchProductDetail(productId);
 
             if (mounted && data != null) {
                 setState(() {
                         _cachedProductData = data;
-
-                        // Update reviews from the new product data
                         _reviews = data.data.reviews;
                         _averageRating = data.data.reviewsAvgRating;
                         _totalReviews = data.data.reviewsCount;
@@ -480,19 +564,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         isFav = data.data.isFavorite ?? false;
                         _isLoading = false;
                     });
-            } else if (mounted) {
+            } else if (mounted && _cachedProductData == null) {
                 setState(() {
                         _isLoading = false;
-                        _errorMessage = 'Failed to load seller product'; // Static string
+                        _errorMessage = 'Failed to load seller product';
                     });
+            } else if (mounted) {
+                setState(() {
+                    _isLoading = false;
+                });
             }
         } catch (e) {
             print('Error loading other seller product: $e');
-            if (mounted) {
+            if (mounted && _cachedProductData == null) {
                 setState(() {
                         _isLoading = false;
                         _errorMessage = e.toString();
                     });
+            } else if (mounted) {
+                setState(() {
+                    _isLoading = false;
+                });
             }
         }
     }
@@ -940,6 +1032,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         if (result['status'] == true) {
           context.read<CartProvider>().fetchCartCount();
 
+          final unitPrice = _selectedPrice > 0
+              ? _selectedPrice
+              : (MetaAnalyticsService.parseAmount(
+                    product.discountPrice.isNotEmpty &&
+                            product.discountPrice != '0.00'
+                        ? product.discountPrice
+                        : product.price,
+                  ) ??
+                  0);
+          MetaAnalyticsService.instance.logAddToCart(
+            contentId: product.id.toString(),
+            contentType: 'product',
+            contentName: product.name,
+            value: unitPrice * quantity,
+            quantity: quantity,
+            currency: MetaConfig.currency,
+          );
+
           final addedText = context.trRead('txt_added_to_cart');
           final viewCartText = context.trRead('txt_view_cart');
 
@@ -1195,6 +1305,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     );
                                 }
                             }
+                        ),
+                        const SizedBox(width: 6),
+                        _CircleAction(
+                            icon: Icons.share_outlined,
+                            bg: isDark ? Colors.white : Colors.black,
+                            fg: isDark ? Colors.black : Colors.white,
+                            onTap: () async {
+                              final price = _selectedPrice > 0
+                                  ? '${_selectedPrice.toStringAsFixed(0)} c.'
+                                  : (product.discountPrice.isNotEmpty
+                                      ? '${product.discountPrice} c.'
+                                      : '${product.price} c.');
+                              await ProductShareService.shareProduct(
+                                productId: product.id,
+                                productName: product.name,
+                                priceText: price,
+                              );
+                            },
                         ),
                         const SizedBox(width: 6),
                         GestureDetector(

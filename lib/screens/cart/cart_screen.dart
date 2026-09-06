@@ -6,6 +6,8 @@ import 'package:http/http.dart';
 import 'package:provider/provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../services/api_service.dart';
+import '../../services/meta_analytics_service.dart';
+import '../../services/meta_config.dart';
 import 'controller/cart_services.dart';
 import 'model/cart_model.dart';
 
@@ -527,6 +529,24 @@ class _CartScreenState extends State<CartScreen> {
                     onPressed: () async {
                       final cart = context.read<CartProvider>();
                       await cart.refreshCart(); // 🔥 IMPORTANT
+
+                      final data = cart.cartData?.data;
+                      final items = data?.items ?? [];
+                      final total = MetaAnalyticsService.parseAmount(
+                            data?.cartTotalAmount,
+                          ) ??
+                          0;
+                      MetaAnalyticsService.instance.logInitiateCheckout(
+                        value: total,
+                        numItems: items.fold<int>(
+                          0,
+                          (sum, item) => sum + (item.quantity),
+                        ),
+                        contentIdsJson: MetaAnalyticsService.encodeContentIds(
+                          items.map((e) => e.productId),
+                        ),
+                        currency: MetaConfig.currency,
+                      );
 
                       if (context.mounted) {
                         Navigator.push(
