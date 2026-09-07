@@ -15,15 +15,9 @@
         android:icon="@mipmap/ic_launcher">
 
 
-
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="default_channel"/>
-
-        <!-- Google Pay / Stripe -->
-        <meta-data
-            android:name="com.google.android.gms.wallet.api.enabled"
-            android:value="true" />
 
         <!-- Meta / Facebook App Events SDK -->
         <meta-data

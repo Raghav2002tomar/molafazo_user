@@ -19,7 +19,6 @@ import 'services/storage_service.dart';
 import 'services/product_cache_service.dart';
 import 'services/deep_link_service.dart';
 import 'services/meta_analytics_service.dart';
-import 'services/stripe_payment_service.dart';
 
 final GlobalKey<ScaffoldMessengerState> rootMessengerKey =
 GlobalKey<ScaffoldMessengerState>();
@@ -39,12 +38,8 @@ void main() async {
   // Meta App Events (Ads Manager attribution) — non-blocking for splash UX
   await MetaAnalyticsService.instance.initialize();
 
-  // Stripe PaymentSheet (Pay Online on checkout)
-  await StripePaymentService.instance.configure();
-
   final translateProvider = TranslateProvider();
   await translateProvider.init(); // Load saved language
-
 
   runApp(Root(translateProvider: translateProvider)); // pass it here
 }

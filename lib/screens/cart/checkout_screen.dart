@@ -1717,8 +1717,6 @@ import '../../providers/cart_provider.dart';
 import '../../services/api_service.dart';
 import '../../services/meta_analytics_service.dart';
 import '../../services/meta_config.dart';
-import '../../services/stripe_config.dart';
-import '../../services/stripe_payment_service.dart';
 import '../address/address_list_screen.dart';
 import '../address/model/address_model.dart';
 import '../bottombar/MainScreen.dart';
@@ -1770,35 +1768,33 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   void _extractPaymentModes() {
-    // Always offer COD (default) + Stripe Pay Online.
-    // Bank-transfer list is disabled (commented in UI).
-    setState(() {
-      _availablePaymentModes = {'cod', 'online'};
-      _hasCodPayment = true;
-      _hasBankPayment = false; // bank list disabled
-      _selectedPayment = 'cod';
-      _selectedBankDetails = null;
-    });
+    final cartProvider = Provider.of<CartProvider>(context, listen: false);
+    final cartData = cartProvider.cartData?.data;
 
-    // Legacy vendor payment-mode detection (kept for reference):
-    // final cartProvider = Provider.of<CartProvider>(context, listen: false);
-    // final cartData = cartProvider.cartData?.data;
-    // if (cartData != null) {
-    //   Set<String> paymentModes = {};
-    //   for (var item in cartData.items) {
-    //     if (item.product.store?.user?.paymentModes != null) {
-    //       paymentModes.addAll(item.product.store!.user!.paymentModes!);
-    //     }
-    //   }
-    //   _availablePaymentModes = paymentModes;
-    //   _hasCodPayment = paymentModes.contains('cod');
-    //   _hasBankPayment = paymentModes.contains('bank');
-    //   if (_hasCodPayment) {
-    //     _selectedPayment = 'cod';
-    //   } else if (_hasBankPayment) {
-    //     _selectedPayment = 'online';
-    //   }
-    // }
+    if (cartData != null) {
+      Set<String> paymentModes = {};
+
+      for (var item in cartData.items) {
+        if (item.product.store?.user?.paymentModes != null) {
+          paymentModes.addAll(item.product.store!.user!.paymentModes!);
+        }
+      }
+
+      setState(() {
+        _availablePaymentModes = paymentModes;
+        _hasCodPayment = paymentModes.contains('cod');
+        _hasBankPayment = paymentModes.contains('bank');
+
+        // Set default payment mode
+        if (_hasCodPayment) {
+          _selectedPayment = 'cod';
+        } else if (_hasBankPayment) {
+          _selectedPayment = 'online';
+        }
+      });
+
+      debugPrint('Available payment modes: $_availablePaymentModes');
+    }
   }
 
   void _extractStoreAddress() {
@@ -2906,42 +2902,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
           const SizedBox(height: 12),
 
-          // Pay on delivery (default)
-          _buildPaymentOption(
-            title: context.tr('title_cod'),
-            subtitle: context.tr('desc_cod'),
-            icon: Icons.local_shipping_outlined,
-            value: 'cod',
-            isDark: isDark,
-          ),
+          if (_hasCodPayment)
+            _buildPaymentOption(
+              title: context.tr('title_cod'),
+              subtitle: context.tr('desc_cod'),
+              icon: Icons.local_shipping_outlined,
+              value: 'cod',
+              isDark: isDark,
+            ),
 
-          const SizedBox(height: 12),
+          if (_hasCodPayment && _hasBankPayment)
+            const SizedBox(height: 12),
 
-          // Pay online → Stripe PaymentSheet
-          _buildPaymentOption(
-            title: context.tr('title_pay_online'),
-            subtitle: context.tr('desc_pay_online'),
-            icon: Icons.credit_card_outlined,
-            value: 'online',
-            isDark: isDark,
-          ),
-
-          // ── Bank transfer list (DISABLED — replaced by Stripe) ──
-          // if (_hasCodPayment)
-          //   _buildPaymentOption(
-          //     title: context.tr('title_cod'),
-          //     subtitle: context.tr('desc_cod'),
-          //     icon: Icons.local_shipping_outlined,
-          //     value: 'cod',
-          //     isDark: isDark,
-          //   ),
-          // if (_hasCodPayment && _hasBankPayment)
-          //   const SizedBox(height: 12),
-          // if (_hasBankPayment)
-          //   _buildBankPaymentOption(
-          //     context,
-          //     isDark,
-          //   ),
+          if (_hasBankPayment)
+            _buildBankPaymentOption(
+              context,
+              isDark,
+            ),
         ],
       ),
     );
@@ -3302,8 +3279,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (_deliveryMethod == 'home_delivery') {
       if (_selectedAddress == null) return false;
     }
-    // Bank selection no longer required — Pay Online uses Stripe
-    // if (_selectedPayment == 'online' && _selectedBankDetails == null) return false;
+    if (_selectedPayment == 'online' && _selectedBankDetails == null) return false;
     return true;
   }
 
@@ -3311,7 +3287,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (_selectedPayment == 'cod') {
       return context.tr('txt_place_order');
     } else if (_selectedPayment == 'online') {
-      return context.tr('txt_pay_online_now');
+      return context.tr('txt_confirm_pay');
     }
     return context.tr('txt_oder_placed');
   }
@@ -3343,82 +3319,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       }
     }
 
-    // Bank transfer validation disabled (Stripe replaces bank list)
-    // if (_selectedPayment == 'online' && _selectedBankDetails == null) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     SnackBar(
-    //       content: Text(context.tr('txt_select_bank')),
-    //       backgroundColor: Colors.orange,
-    //     ),
-    //   );
-    //   return;
-    // }
+    // ✅ PAYMENT VALIDATION
+    if (_selectedPayment == 'online' && _selectedBankDetails == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.tr('txt_select_bank')),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
 
     setState(() {
       _isPlacingOrder = true;
     });
 
     try {
-      double orderAmount = 0;
-      if (cartData != null) {
-        for (var item in cartData.items) {
-          final itemPrice = item.selectedCombination != null
-              ? double.parse(item.selectedCombination!.price)
-              : item.product.getDisplayPrice();
-          orderAmount += itemPrice * item.quantity;
-        }
-        if (orderAmount <= 0) {
-          orderAmount = cartData.cartTotalAmount;
-        }
-      }
-
-      String? stripePaymentIntentId;
-      String? paymentStatus;
-      bool? paidFlag;
-
-      // Pay Online → Stripe PaymentSheet first, then place order as paid
-      if (_selectedPayment == 'online') {
-        final payResult = await StripePaymentService.instance.pay(
-          amountMajor: orderAmount,
-          currency: StripeConfig.currency,
-          description: 'inBozor order',
-        );
-
-        if (!payResult.success) {
-          if (!mounted) return;
-          setState(() => _isPlacingOrder = false);
-          if (!payResult.cancelled) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  payResult.message ?? context.tr('txt_payment_failed'),
-                ),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          return;
-        }
-
-        stripePaymentIntentId = payResult.paymentIntentId;
-        paymentStatus = 'paid';
-        paidFlag = true;
-      }
-
       final result = await OrderService.placeOrder(
-        addressId: _deliveryMethod == 'home_delivery'
-            ? _selectedAddress!.id.toString()
-            : "",
+        addressId: _deliveryMethod == 'home_delivery' ? _selectedAddress!.id.toString() : "",
         deliveryMethod: _deliveryMethod,
         paymentType: _selectedPayment,
-        // bankDetails: _selectedPayment == 'online' ? _selectedBankDetails : null,
-        bankDetails: null,
-        paymentStatus: paymentStatus,
-        stripePaymentIntentId: stripePaymentIntentId,
-        paid: paidFlag,
+        bankDetails: _selectedPayment == 'online' ? _selectedBankDetails : null,
       );
-
-      if (!mounted) return;
 
       setState(() {
         _isPlacingOrder = false;
@@ -3433,8 +3355,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ?.toString()
             : null;
         final items = cartData?.items ?? [];
+        final amount = MetaAnalyticsService.parseAmount(
+              cartData?.cartTotalAmount,
+            ) ??
+            0;
         MetaAnalyticsService.instance.logPurchase(
-          amount: orderAmount,
+          amount: amount,
           currency: MetaConfig.currency,
           orderId: orderId,
           numItems: items.fold<int>(0, (sum, item) => sum + item.quantity),
@@ -3485,7 +3411,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   void _showOrderSuccessDialog(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isPaidOnline = _selectedPayment == 'online';
 
     showDialog(
       context: context,
@@ -3508,7 +3433,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              context.tr('txt_order_placed_successfully'),
+              _selectedPayment == 'cod'
+                  ? context.tr('txt_order_placed_successfully')
+                  : context.tr('txt_order_initiated'),
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -3518,9 +3445,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              isPaidOnline
-                  ? context.tr('txt_payment_successful_order_placed')
-                  : context.tr('txt_order_placed'),
+              _selectedPayment == 'cod'
+                  ? context.tr('txt_order_placed')
+                  : context.tr('txt_please_complete_bank_details'),
               style: const TextStyle(color: Colors.grey),
               textAlign: TextAlign.center,
             ),
