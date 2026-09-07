@@ -23,7 +23,7 @@ class ApiService {
 
 
 
-  static const bool isBebugmode = false;
+  static const bool isBebugmode = true;
 
 
 

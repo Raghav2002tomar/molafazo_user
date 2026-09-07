@@ -71,6 +71,9 @@ class OrderService {
     required String deliveryMethod,
     required String paymentType,
     Map<String, dynamic>? bankDetails,
+    String? paymentStatus,
+    String? stripePaymentIntentId,
+    bool? paid,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('api_token');
@@ -91,10 +94,20 @@ class OrderService {
         'payment_type': paymentType,
       };
 
-      // Add bank details if payment type is online AND bankDetails are provided
-      // Your backend expects bank_id when payment_type is "online"
+      // Legacy bank transfer (disabled in UI) — keep for API compatibility
       if (paymentType == 'online' && bankDetails != null) {
         requestBody['bank_id'] = bankDetails['bank_id'];
+      }
+
+      // Stripe Pay Online → mark as paid after successful PaymentSheet
+      if (paymentStatus != null && paymentStatus.isNotEmpty) {
+        requestBody['payment_status'] = paymentStatus;
+      }
+      if (paid != null) {
+        requestBody['paid'] = paid;
+      }
+      if (stripePaymentIntentId != null && stripePaymentIntentId.isNotEmpty) {
+        requestBody['stripe_payment_intent_id'] = stripePaymentIntentId;
       }
 
       debugPrint('Order Request: ${jsonEncode(requestBody)}');

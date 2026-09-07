@@ -8,5 +8,9 @@
 	<array>
 		<string>applinks:mudir.inbozor.app</string>
 	</array>
+	<key>com.apple.developer.in-app-payments</key>
+	<array>
+		<string>merchant.com.inbozor.user</string>
+	</array>
 </dict>
 </plist>
